@@ -82,48 +82,15 @@
   }
 }
 
-/* Warm paper on every content page: the same paper, glows and grain as the tree. */
-.paper-page::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .42  0 0 0 0 .38  0 0 0 0 .34  0 0 0 .16 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"),
-    radial-gradient(70vmax 70vmax at 88% 6%, color-mix(in srgb, var(--color-wash-rose) 42%, transparent), transparent 70%),
-    radial-gradient(60vmax 60vmax at 6% 100%, color-mix(in srgb, var(--color-leaf-mint) 50%, transparent), transparent 70%);
-}
-
 /*
-  The canopy transition (see FileTree.astro and Base.astro). The tree's canopy swells to
-  cover the screen; every page then starts under this exact same wash, drawn before its first
-  frame, so there's no seam. --veil-r is set from the screen size to match the tree's drawing.
+  The pan between the tree and a page (see FileTree.astro and Base.astro). Pages live above the
+  tree. The tree's half speeds up as it drops away (ease-in); the page's half starts at that same
+  speed and slows into place (ease-out), so the two halves read as one pan. 0.55s each.
 */
-html.veil-on body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  pointer-events: auto;
-  background:
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .42  0 0 0 0 .38  0 0 0 0 .34  0 0 0 .16 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"),
-    radial-gradient(circle var(--veil-r) at 50% 50%, var(--veil-deep) 0%, var(--veil-deep) 55%, var(--veil-light) 100%);
-  background-blend-mode: multiply, normal;
-}
-/* arriving: the colour thins out like a wash drying, revealing the page */
-html.veil-on.veil-out body::before { pointer-events: none; animation: veil-dissolve 1s cubic-bezier(0.45, 0, 0.2, 1) 0.06s both; }
-/* leaving for the tree: the colour gathers again */
-html.veil-on.veil-in body::before { animation: veil-gather 0.45s cubic-bezier(0.55, 0, 0.45, 1) both; }
-@keyframes veil-dissolve {
-  0% { opacity: 1; filter: blur(0); transform: scale(1); }
-  45% { opacity: 0.72; filter: blur(8px); transform: scale(1.03); }
-  100% { opacity: 0; filter: blur(26px); transform: scale(1.1); }
-}
-@keyframes veil-gather {
-  0% { opacity: 0; filter: blur(26px); transform: scale(1.1); }
-  100% { opacity: 1; filter: blur(0); transform: scale(1); }
-}
+html.pan-arrive .pan-content { animation: pan-down-into-place 0.55s cubic-bezier(0.33, 1, 0.68, 1) both; }
+html.pan-leave .pan-content { animation: pan-lift-away 0.55s cubic-bezier(0.32, 0, 0.67, 0) both; pointer-events: none; }
+@keyframes pan-down-into-place { from { transform: translateY(-104vh); } to { transform: none; } }
+@keyframes pan-lift-away { from { transform: none; } to { transform: translateY(-104vh); } }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

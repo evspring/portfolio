@@ -2,6 +2,7 @@
 import '../styles/global.css';
 
 import { EMAIL } from '../data/tree';
+import PaperSky from '../components/PaperSky.astro';
 
 interface Props {
   title?: string;
@@ -30,21 +31,17 @@ const {
     <meta name="theme-color" content="#f7f0ea" />
     <script is:inline>document.documentElement.classList.add('js')</script>
     <!--
-      The canopy transition: if we're arriving from the tree (or returning to it), put up the
-      same colour wash before the first frame so the handoff has no seam.
+      The pan between the tree and a page. Set up before the first frame: a page we're panning
+      up into starts above the screen; the tree we're returning to starts hidden below.
     -->
     <script is:inline>
       (function () {
         try {
-          var d = JSON.parse(sessionStorage.getItem('tree-veil') || 'null');
+          var d = JSON.parse(sessionStorage.getItem('tree-pan') || 'null');
           if (!d || Date.now() - d.at > 4000 || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
           var here = location.pathname;
-          if (!((d.way === 'in' && d.href === here) || (d.way === 'out' && here === '/'))) return;
-          var s = document.documentElement.style;
-          s.setProperty('--veil-deep', d.deep);
-          s.setProperty('--veil-light', d.light);
-          s.setProperty('--veil-r', Math.hypot(innerWidth, innerHeight) * 1.15 * 0.62 + 'px');
-          document.documentElement.classList.add('veil-on');
+          if (d.way === 'in' && d.href === here) document.documentElement.classList.add('pan-arrive');
+          if (d.way === 'out' && here === '/') document.documentElement.classList.add('pan-return');
         } catch (e) {}
       })();
     </script>
@@ -55,51 +52,42 @@ const {
       rel="stylesheet"
     />
   </head>
-  <body class:list={['min-h-screen', !bare && 'paper-page']}>
+  <body class="min-h-screen">
+    <PaperSky />
     {bare ? (
       <slot />
     ) : (
-      <>
+      <div class="pan-content">
         <header class="mx-auto flex max-w-[68rem] items-center justify-between px-5 pt-6 sm:px-8">
           <a href="/" class="text-sm font-medium no-underline">Evan Springer</a>
           <a href={back} class="text-sm text-quiet no-underline hover:text-ink" data-back>Back to the tree</a>
         </header>
 
         <!--
-          The canopy transition, page side. Arriving from the tree: the canopy's colour fills the
-          screen, then dissolves to reveal the page. Going back: the colour gathers again, and the
-          tree flows it back into the canopy you came from.
+          The pan, page side. Arriving from the tree, the page slides down into place (see
+          global.css). "Back to the tree" lifts the page away upward, then the tree rises into view.
         -->
         <script is:inline>
           (function () {
-            var KEY = 'tree-veil', root = document.documentElement, d = null;
+            var root = document.documentElement, KEY = 'tree-pan';
             var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-            try { d = JSON.parse(sessionStorage.getItem(KEY) || 'null'); sessionStorage.removeItem(KEY); } catch (e) {}
-            var colours = d && d.way === 'in' && d.href === location.pathname ? d : null;
-            // arriving: the wash is already up (see <head>); let it dissolve
-            if (root.classList.contains('veil-on')) {
-              var end = function () { root.classList.remove('veil-on', 'veil-out'); };
-              requestAnimationFrame(function () {
-                root.classList.add('veil-out');
-                document.body.addEventListener('animationend', end, { once: true });
-                setTimeout(end, 1400); // in case the animation event never comes
-              });
+            try { sessionStorage.removeItem(KEY); } catch (e) {}
+            var content = document.currentScript.closest('.pan-content');
+            if (root.classList.contains('pan-arrive')) {
+              var done = function () { root.classList.remove('pan-arrive'); };
+              content.addEventListener('animationend', done, { once: true });
+              setTimeout(done, 1200);
             }
-            // going back: gather the colour, then hand it to the tree
             document.addEventListener('click', function (e) {
               var a = e.target.closest && e.target.closest('[data-back]');
-              if (!a || !colours || reduced || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+              if (!a || reduced || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
               e.preventDefault();
-              try { sessionStorage.setItem(KEY, JSON.stringify({ light: colours.light, deep: colours.deep, href: location.pathname, at: Date.now(), way: 'out' })); } catch (err) {}
-              root.style.setProperty('--veil-deep', colours.deep);
-              root.style.setProperty('--veil-light', colours.light);
-              root.style.setProperty('--veil-r', Math.hypot(innerWidth, innerHeight) * 1.15 * 0.62 + 'px');
-              root.classList.remove('veil-out');
-              root.classList.add('veil-on', 'veil-in');
-              document.body.addEventListener('animationend', function () { location.href = a.href; }, { once: true });
+              try { sessionStorage.setItem(KEY, JSON.stringify({ way: 'out', href: location.pathname, at: Date.now() })); } catch (err) {}
+              root.classList.add('pan-leave');
+              content.addEventListener('animationend', function () { location.href = a.href; }, { once: true });
             });
             addEventListener('pageshow', function (e) {
-              if (e.persisted) root.classList.remove('veil-on', 'veil-in', 'veil-out');
+              if (e.persisted) root.classList.remove('pan-arrive', 'pan-leave');
             });
           })();
         </script>
@@ -112,7 +100,7 @@ const {
           <span>© {new Date().getFullYear()} Evan Springer</span>
           <a href={`mailto:${EMAIL}`} class="no-underline hover:text-ink">{EMAIL}</a>
         </footer>
-      </>
+      </div>
     )}
   </body>
 </html>

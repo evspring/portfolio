@@ -177,3 +177,13 @@ What changed:
   - The tree's full-screen wash and the page's were drawn differently; both now use the same gradient, sized to the screen, with grain. Measured at five points with the screen fully covered: within a few shades of each other.
   - The page used to paint for a moment before the colour covered it (and the tree flashed on the way back); the wash now goes up in `<head>`, before the first frame.
   - The expansion fades up out of the canopy instead of popping on top of it, and settles crisp at full screen; the arrival dissolve is a little slower (1s), easing like a wash drying.
+
+**#17, Evan**
+> Not great, lets instead try making the transition a pan upwards into the new page
+
+What changed:
+- Removed the canopy-wash transition.
+- New: pages live above the tree. Clicking a canopy tilts the view up: the tree drops away (speeding up), the name and path fade, and the page slides down into place from above (slowing to a stop). Both halves 0.55s, the hand-off at matched speed so it reads as one pan.
+- "Back to the tree" reverses it: the page lifts away upward, the tree rises back into view from below.
+- One sky for the whole site (`PaperSky.astro`): paper, glows, faint streaks and grain, drawn identically on every page before the first frame and never moving, so only the tree and the page travel.
+- Checked: both directions, the hand-off frame (empty paper on both sides), and the browser back button mid-flow.

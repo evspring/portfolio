@@ -16,7 +16,7 @@ People who build apps and products (founders, product leads, hiring managers) de
 | --- | --- |
 | Basit A. Khan's minimal UI reels (via @insporadesign, Oct 12 2026, and @basit_designs, Oct 13 2026) | Studied frame by frame; see "What the reels do" below. |
 | Finn Taylor's "Literal file tree" (video) | The home page's idea and motion: the site is a file tree; folders grow branches, files open pages. See "The tree" below. |
-| sasha birukoff's "fluid illumination" (video) | The page transition: a shape that morphs between sizes in ~0.6s, slow-fast-slow, with width and height out of step and a wobbling soft edge, glowing from a deep centre. |
+| sasha birukoff's "fluid illumination" (video) | Tried for the page transition (canopy swelling to fill the screen); replaced by a pan. |
 | Gris (game art, three stills) | The home page's art style: watercolour washes on warm paper, thin flowing coral stems, candelabra twigs with square buds, big translucent geometric canopies, a dusty rose / sage / teal palette. Borrowed as a style only; the tree and every shape in it are our own. |
 | niklaspeterson.com | Structure: a plain one-sentence headline, a short intro, then case studies as large media with a one-line outcome under each. No tricks in the navigation. |
 
@@ -154,13 +154,12 @@ The trunk rises straight out of the soil to the first fork. The pot is also a wa
 - [ ] Domain name.
 - [ ] Husky Liners is a website: show it in a browser frame on the mat instead of phones.
 
-## The canopy transition
+## The page transition: a pan
 
-Measured from sasha birukoff's "fluid illumination" (7s, 60fps; shape size tracked at 30fps): each change of shape takes ~0.6s, slow-fast-slow; one axis leads the other by ~0.1s; the centre holds still; edges stay soft and wobble while moving.
+Pages live above the tree. Opening one tilts the view up: the tree drops away below, speeding up (ease-in, 0.55s), while the name and path fade; the page then slides down into place from above, starting at the same speed and slowing to a stop (ease-out, 0.55s), so the two halves read as one continuous pan. "Back to the tree" tilts down: the page lifts away upward and the tree rises back into view from below.
 
-- **Opening a page:** clicking a page's canopy swells it from its place on the tree to cover the screen in 0.75s, drifting to the centre. Width leads height; the edge wobbles and softens mid-flight; the fill glows from the canopy's deep colour at the centre to its light colour at the edges, with paper grain over it.
-- **Arriving:** the page starts under exactly the same wash (same gradient sized to the screen, same grain), put up before its first frame, so there's no seam; it then dissolves like a wash drying (fades, blurs, swells slightly) over 1s onto the page's warm paper.
-- **Going back:** "Back to the tree" gathers the colour again (0.45s); the tree starts under the same wash and flows it back down into the canopy you came from.
-- The expansion fades up out of the canopy over its first fifth instead of appearing on top of it, and settles crisp at full screen.
-- **Every page is on the tree's paper:** `#F7F0EA` with the same rose and sage glows and grain.
-- Skipped for contact (email), modifier-clicks (new tab), and reduced motion. The browser's back button restores a clean page.
+The sky (paper, rose and sage glows, faint upright streaks, grain) is drawn identically on every page before the first frame and never moves, so only the tree and the page travel and the midpoint is calm, empty paper.
+
+Skipped for contact (email), modifier-clicks (new tab) and reduced motion. The browser's back button restores a clean tree.
+
+(Tried first and dropped: the canopy swelling to fill the screen, after sasha birukoff's "fluid illumination".)

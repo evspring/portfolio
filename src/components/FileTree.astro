@@ -21,11 +21,8 @@ import { tree } from '../data/tree';
 ---
 
 <div class="tree-root" data-tree>
-  <canvas class="tree-bg" aria-hidden="true"></canvas>
   <canvas class="tree-canvas" aria-hidden="true"></canvas>
-  <canvas class="tree-grain" aria-hidden="true"></canvas>
   <div class="tree-world" data-world></div>
-  <canvas class="tree-veil" aria-hidden="true"></canvas>
 
   <nav class="tree-list" aria-label="Pages">
     <ul>
@@ -57,13 +54,12 @@ import { tree } from '../data/tree';
 <script type="application/json" id="tree-data" set:html={JSON.stringify(tree)} />
 
 <style is:global>
-  .tree-root { position: fixed; inset: 0; overflow: hidden; background: var(--color-paper); }
-  .tree-bg, .tree-canvas, .tree-grain { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-  /* paper grain sits over the paint, so washes pick up the texture of the paper */
-  .tree-grain { mix-blend-mode: multiply; opacity: 0.5; }
-  /* the canopy that swells to fill the screen when a page opens; above everything, including the chrome */
-  .tree-veil { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 40; }
-  .tree-veil.busy { pointer-events: auto; }
+  /* the sky is drawn behind everything by PaperSky; the tree is painted over it */
+  .tree-root { position: fixed; inset: 0; overflow: hidden; }
+  .tree-root.panning .tree-world { pointer-events: none; }
+  /* coming back from a page: hide the tree until it starts rising into view */
+  html.pan-return .tree-canvas, html.pan-return .tree-world { visibility: hidden; }
+  .tree-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
   .tree-world { position: absolute; left: 0; top: 0; will-change: transform; }
 
   /* Every page as a plain list, for when JavaScript is off. With it on, the tree's own
@@ -152,7 +148,7 @@ import { tree } from '../data/tree';
   };
 
   const root = document.querySelector<HTMLElement>('[data-tree]')!;
-  const [bgCanvas, canvas, grainCanvas] = [...root.querySelectorAll('canvas')];
+  const canvas = root.querySelector('canvas')!;
   const ctx = canvas.getContext('2d')!;
   const world = root.querySelector<HTMLElement>('[data-world]')!;
   const pathEl = document.querySelector<HTMLElement>('[data-path]')!;
@@ -208,7 +204,6 @@ import { tree } from '../data/tree';
 
   const css = getComputedStyle(document.documentElement);
   const C = (name: string) => css.getPropertyValue(`--color-${name}`).trim();
-  const PAPER = C('paper');
   const STEM = C('stem'), STEM_DEEP = C('stem-deep');
   const LEAVES = [C('leaf-sage'), C('leaf-teal'), C('leaf-deep')];
   const MINT = C('leaf-mint'), ROSE = C('wash-rose'), BUD = C('bud');
@@ -880,153 +875,53 @@ import { tree } from '../data/tree';
     refocus();
   }
 
-  /* ---------- paper: background washes and grain ---------- */
-  let grainPattern: CanvasPattern | null = null;
-  function paintPaper() {
-    const b = bgCanvas.getContext('2d')!;
-    bgCanvas.width = Math.round(W * DPR); bgCanvas.height = Math.round(H * DPR);
-    b.setTransform(DPR, 0, 0, DPR, 0, 0);
-    b.fillStyle = PAPER;
-    b.fillRect(0, 0, W, H);
-    // the paper was washed before the tree was painted: a warm rose glow up high,
-    // a cool sage one down low, and a few faint upright washes far off, like distant trunks
-    const rnd = rngFrom(hash('paper'));
-    const glow = (x: number, y: number, r: number, col: string, a: number) => {
-      const g = b.createRadialGradient(x, y, 0, x, y, r);
-      g.addColorStop(0, col); g.addColorStop(1, 'rgba(255,255,255,0)');
-      b.globalAlpha = a; b.fillStyle = g; b.fillRect(0, 0, W, H);
-    };
-    glow(W * 0.82, H * 0.08, Math.max(W, H) * 0.7, ROSE, 0.42);
-    glow(W * 0.1, H * 1.0, Math.max(W, H) * 0.6, MINT, 0.5);
-    const streaks = Math.round(W / 220);
-    for (let i = 0; i < streaks; i++) {
-      const x = (i + 0.2 + rnd() * 0.6) * (W / streaks), w = 14 + rnd() * 46;
-      const g = b.createLinearGradient(x - w / 2, 0, x + w / 2, 0);
-      g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, ROSE); g.addColorStop(1, 'rgba(255,255,255,0)');
-      b.globalAlpha = 0.1 + rnd() * 0.1;
-      b.fillStyle = g;
-      b.fillRect(x - w / 2, 0, w, H * (0.55 + rnd() * 0.45));
-    }
-    b.globalAlpha = 1;
-    // grain: soft speckle, multiplied over everything painted
-    const g = grainCanvas.getContext('2d')!;
-    grainCanvas.width = Math.round(W * DPR); grainCanvas.height = Math.round(H * DPR);
-    const tile = document.createElement('canvas');
-    tile.width = tile.height = 160;
-    const t = tile.getContext('2d')!;
-    const img = t.createImageData(160, 160);
-    for (let i = 0; i < img.data.length; i += 4) {
-      const v = 255 - Math.floor(Math.pow(rnd(), 3) * 46);
-      img.data[i] = v; img.data[i + 1] = v - 2; img.data[i + 2] = v - 6; img.data[i + 3] = 255;
-    }
-    t.putImageData(img, 0, 0);
-    g.fillStyle = g.createPattern(tile, 'repeat')!;
-    grainPattern = vctx.createPattern(tile, 'repeat');
-    g.fillRect(0, 0, grainCanvas.width, grainCanvas.height);
-  }
-
-  /* ---------- the canopy transition ---------- */
-  // Measured from sasha birukoff's "fluid illumination": each change of shape takes ~0.6s,
-  // slow-fast-slow; width and height don't move together (one leads by ~0.1s), which makes it
-  // feel liquid; the edges wobble while it moves and settle when it stops; the colour glows
-  // from a deeper centre to lighter edges.
-  const veil = root.querySelector<HTMLCanvasElement>('.tree-veil')!;
-  const vctx = veil.getContext('2d')!;
-  const VEIL_KEY = 'tree-veil';
-  const easeInOut = (u: number) => (u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2);
-  type VeilRun = { x: number; y: number; size: number; light: string; deep: string; dir: 1 | -1; t0: number; dur: number; done?: () => void };
-  let veilRun: VeilRun | null = null;
-
-  function drawVeil(p: number, now: number, v: VeilRun) {
-    vctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    vctx.clearRect(0, 0, W, H);
-    if (p <= 0) return;
-    const cover = Math.hypot(W, H) * 1.15;
-    // the two axes, one a beat behind the other
-    const ux = easeInOut(clamp(p / 0.86, 0, 1)), uy = easeInOut(clamp((p - 0.14) / 0.86, 0, 1));
-    const w = lerp(v.size, cover, ux), h = lerp(v.size, cover, uy);
-    const cx = lerp(v.x, W / 2, ux), cy = lerp(v.y, H / 2, uy);
-    // a rounded square whose edge wobbles while it moves
-    const wob = Math.sin(Math.PI * p) * 0.045, n = 5.5, N = 72, t = now / 1000;
-    const path = new Path2D();
-    for (let i = 0; i <= N; i++) {
-      const a = (i / N) * Math.PI * 2, c = Math.cos(a), s2 = Math.sin(a);
-      const r = 1 + wob * (Math.sin(3 * a + t * 5) + 0.6 * Math.sin(5 * a - t * 7));
-      const x = cx + (w / 2) * r * Math.sign(c) * Math.pow(Math.abs(c), 2 / n);
-      const y = cy + (h / 2) * r * Math.sign(s2) * Math.pow(Math.abs(s2), 2 / n);
-      i ? path.lineTo(x, y) : path.moveTo(x, y);
-    }
-    path.closePath();
-    const g = vctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(w, h) * 0.62);
-    g.addColorStop(0, v.deep);
-    g.addColorStop(0.55, v.deep);
-    g.addColorStop(1, v.light);
-    vctx.save();
-    vctx.filter = `blur(${lerp(4, 12, Math.sin(Math.PI * p)) * (1 - p * p)}px)`; // soft, wet edge, settling crisp at full screen
-    // fade up out of the canopy instead of appearing on top of it
-    const fadeIn = clamp(p / 0.22, 0, 1);
-    vctx.globalAlpha = fadeIn * fadeIn * (3 - 2 * fadeIn);
-    vctx.fillStyle = g;
-    vctx.fill(path);
-    vctx.filter = 'none';
-    // paper grain over the paint
-    if (grainPattern) { vctx.globalCompositeOperation = 'multiply'; vctx.globalAlpha = 0.5 * fadeIn; vctx.fillStyle = grainPattern; vctx.fill(path); }
-    vctx.restore();
-  }
-
-  function runVeil(v: VeilRun) {
-    veilRun = v;
-    veil.classList.add('busy');
-    const step = (now: number) => {
-      if (veilRun !== v) return;
-      const u = clamp((now - v.t0) / (v.dur * 1000), 0, 1);
-      drawVeil(v.dir === 1 ? u : 1 - u, now, v);
-      if (u < 1) requestAnimationFrame(step);
-      else {
-        if (v.dir === -1) { clearVeil(); }
-        v.done?.();
-      }
-    };
-    requestAnimationFrame(step);
-  }
-  function clearVeil() {
-    veilRun = null;
-    veil.classList.remove('busy');
-    vctx.setTransform(1, 0, 0, 1, 0, 0);
-    vctx.clearRect(0, 0, veil.width, veil.height);
-  }
+  /* ---------- the page transition: a pan up into the page ---------- */
+  // Pages live above the tree. Opening one tilts the view up: the tree drops away below
+  // (speeding up), the page slides down into place from above (slowing down) at the same
+  // speed, so it reads as one continuous pan. The sky holds still behind both.
+  // Going back tilts down: the page lifts away and the tree rises back into view.
+  const PAN_KEY = 'tree-pan';
+  const PAN_TIME = 0.55; // seconds for each half; the page's half is in global.css
+  const chrome = [...document.querySelectorAll<HTMLElement>('[data-path], [data-count], header h1')];
+  const fadeChrome = (show: boolean) => chrome.forEach((el) => {
+    el.style.transition = `opacity ${show ? 0.4 : 0.25}s ease`;
+    el.style.opacity = show ? '' : '0';
+  });
 
   function openPage(l: Limb) {
-    const c = l.crown!;
     const href = l.node.href!;
-    try { sessionStorage.setItem(VEIL_KEY, JSON.stringify({ light: c.light, deep: c.deep, href, at: Date.now(), way: 'in' })); } catch {}
-    runVeil({
-      x: l.tip.x - cam.x.v, y: l.tip.y - cam.y.v, size: l.crownSize,
-      light: c.light, deep: c.deep, dir: 1, t0: performance.now(), dur: 0.85,
-      done: () => { location.href = href; },
-    });
+    try { sessionStorage.setItem(PAN_KEY, JSON.stringify({ way: 'in', href, at: Date.now() })); } catch {}
+    root.classList.add('panning');
+    fadeChrome(false);
+    cam.y.go(cam.y.v - H * 1.04, PAN_TIME, easeIn); // the view rises; the tree drops away
+    setTimeout(() => { location.href = href; }, PAN_TIME * 1000);
   }
 
-  // Coming back from a page: start full-screen and flow back into the canopy you came from.
+  // Coming back from a page: the tree rises back into view from below.
   function returnFromPage() {
-    let d: { light: string; deep: string; href: string; at: number; way: string } | null = null;
-    try { d = JSON.parse(sessionStorage.getItem(VEIL_KEY) || 'null'); sessionStorage.removeItem(VEIL_KEY); } catch {}
-    if (!d || d.way !== 'out' || Date.now() - d.at > 4000 || reduced) { document.documentElement.classList.remove('veil-on'); return; }
-    const l = limbs.find((x) => x.node.href === d!.href && !x.dying);
     const html = document.documentElement;
-    if (!l) { html.classList.remove('veil-on'); return; }
-    const v: VeilRun = {
-      x: l.tip.x - cam.x.v, y: l.tip.y - cam.y.v, size: l.crownSize,
-      light: d.light, deep: d.deep, dir: -1, t0: performance.now() + 120, dur: 0.75,
-    };
-    drawVeil(1, performance.now(), v); // the same wash the page put up in <head>…
-    html.classList.remove('veil-on'); // …so swapping to the canvas has no seam
-    runVeil(v);
+    let d: { way: string; href: string; at: number } | null = null;
+    try { d = JSON.parse(sessionStorage.getItem(PAN_KEY) || 'null'); sessionStorage.removeItem(PAN_KEY); } catch {}
+    if (d && d.way === 'out' && Date.now() - d.at < 4000 && !reduced) {
+      const target = cam.y.v;
+      cam.y.set(target - H * 1.04);
+      fadeChrome(false);
+      requestAnimationFrame(() => {
+        html.classList.remove('pan-return');
+        cam.y.go(target, PAN_TIME, easeOut);
+        setTimeout(() => fadeChrome(true), PAN_TIME * 600);
+      });
+    } else html.classList.remove('pan-return');
   }
 
-  // The browser's back button can restore this page mid-transition; start clean.
+  // The browser's back button can restore this page mid-pan; put the tree back where it was.
   addEventListener('pageshow', (e) => {
-    if ((e as PageTransitionEvent).persisted) { clearVeil(); document.documentElement.classList.remove('veil-on'); }
+    if (!(e as PageTransitionEvent).persisted) return;
+    root.classList.remove('panning');
+    document.documentElement.classList.remove('pan-return');
+    fadeChrome(true);
+    refocus(true);
+    wake();
   });
 
   /* ---------- setup ---------- */
@@ -1037,8 +932,7 @@ import { tree } from '../data/tree';
     U = narrow ? 1 : clamp(H / 690, 1, 1.6);
     POT_SCALE = U;
     canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
-    veil.width = Math.round(W * DPR); veil.height = Math.round(H * DPR);
-    paintPaper();
+
   }
 
   function plant(path: string[]) {

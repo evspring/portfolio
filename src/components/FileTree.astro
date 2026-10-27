@@ -90,7 +90,7 @@ import { tree } from '../data/tree';
     transition: opacity 0.35s ease, color 0.15s ease;
     pointer-events: none;
   }
-  .tnode .hit { position: absolute; translate: -50% -50%; border-radius: 10px; }
+  .tnode .hit { position: absolute; translate: -50% -50%; border-radius: 22%; }
   .tnode .label {
     position: absolute;
     white-space: nowrap;
@@ -143,6 +143,7 @@ import { tree } from '../data/tree';
     kids: Limb[];
     grow: Tween;
     focus: Tween;
+    hover: Tween; // the canopy swells a little under the pointer
     dying: boolean;
   };
 
@@ -260,8 +261,9 @@ import { tree } from '../data/tree';
     const base = center ? (narrow ? 108 : side * 0.66) : side;
     return { len: base, w: (depth === 1 ? [7.5, 2.8] : [6.5, 2.4]).map((v) => v * kk) as [number, number] };
   }
-  const canopyFor = (depth: number) => (narrow ? (depth === 1 ? 130 : 112) : (depth === 1 ? 150 : 128)) * k();
-  const leafFor = () => (narrow ? 44 : 56) * k();
+  const canopyFor = (depth: number) => (narrow ? (depth === 1 ? 128 : 112) : (depth === 1 ? 170 : 150)) * k();
+  // pages' canopies: big enough to read as the thing you click; the ones out on the sides biggest
+  const leafFor = (center: boolean) => (narrow ? (center ? 70 : 82) : (center ? 104 : 124)) * k();
 
   function makeCanopy(size: number, light: string, deep: string, rnd: () => number): Canopy {
     const sq = blobShape(size / 2, 5.5, 1, 1, 28);
@@ -345,7 +347,7 @@ import { tree } from '../data/tree';
     const limb: Limb = {
       node, kind, depth, key, parent, angle, len: s, samples, edges: [], tip: { x: 0, y: 0, tx: 0, ty: -1 },
       twigs: [], crown: null, crownSize: 0, el: null, box: null, kids: [],
-      grow: new Tween(0), focus: new Tween(1), dying: false,
+      grow: new Tween(0), focus: new Tween(1), hover: new Tween(0), dying: false,
     };
     limb.tip = at(limb, limb.len);
 
@@ -385,7 +387,7 @@ import { tree } from '../data/tree';
 
     // Folders bloom into a big canopy; pages end in a small one.
     if (kind !== 'trunk') {
-      const size = kind === 'folder' ? canopyFor(depth) : leafFor();
+      const size = kind === 'folder' ? canopyFor(depth) : leafFor(center);
       const pick = hash(key) % 3;
       const [light, deep] = kind === 'folder'
         ? (pick === 0 ? [MINT, LEAVES[1]] : pick === 1 ? [LEAVES[0], LEAVES[2]] : [MINT, LEAVES[2]])
@@ -484,7 +486,7 @@ import { tree } from '../data/tree';
     const lw = text.length * 6.7 + 6;
     const { x, y } = l.tip;
     // offsets of the label's anchor from the tip, and how it reads from there
-    const h = l.crownSize / 2 + (isFolder ? 0 : 2);
+    const h = l.crownSize / 2 + 2;
     type Spot = { cls: string; dx: number; dy: number; box: Box };
     const spot = (cls: string, dx: number, dy: number): Spot => {
       const x0 = cls === 'read-left' ? x + dx - lw : cls === 'read-centre' ? x + dx - lw / 2 : x + dx;
@@ -506,7 +508,8 @@ import { tree } from '../data/tree';
     l.box = pick.box;
     placed.push(pick.box);
 
-    const hitSize = isFolder ? l.crownSize * 0.8 : 30;
+    // the whole canopy is the button
+    const hitSize = l.crownSize * 0.96;
     el.innerHTML = `<span class="hit" style="width:${hitSize}px;height:${hitSize}px"></span>` +
       `<span class="label" style="left:${Math.round(pick.dx)}px;top:${Math.round(pick.dy)}px">${text}</span>`;
     el.style.left = `${Math.round(x)}px`;
@@ -519,6 +522,11 @@ import { tree } from '../data/tree';
     } else {
       (el as HTMLAnchorElement).href = l.node.href!;
     }
+    const hover = (on: boolean) => l.hover.go(on ? 1 : 0, on ? 0.35 : 0.5);
+    el.addEventListener('pointerenter', () => hover(true));
+    el.addEventListener('pointerleave', () => hover(false));
+    el.addEventListener('focus', () => hover(true));
+    el.addEventListener('blur', () => hover(false));
     world.appendChild(el);
     l.el = el;
   }
@@ -632,7 +640,7 @@ import { tree } from '../data/tree';
   function draw(now: number) {
     raf = 0;
     let busy = cam.x.tick(now) | cam.y.tick(now) | potLift.tick(now) | sprout.tick(now) ? true : false;
-    for (const l of limbs) busy = l.grow.tick(now) || l.focus.tick(now) || busy;
+    for (const l of limbs) busy = l.grow.tick(now) || l.focus.tick(now) || l.hover.tick(now) || busy;
 
     const cx = Math.round(cam.x.v), cy = Math.round(cam.y.v);
     world.style.transform = `translate(${-cx}px, ${-cy}px)`;
@@ -713,7 +721,9 @@ import { tree } from '../data/tree';
     if (!l.crown) return;
     const bloom = clamp((l.grow.v - 0.72) / 0.28, 0, 1);
     if (bloom <= 0) return;
-    drawCanopy(l.crown, l.tip.x - cx, l.tip.y - cy, lerp(0.5, 1, easeOut(bloom)), fadeOf(l) * bloom);
+    const hv = l.hover.v;
+    drawCanopy(l.crown, l.tip.x - cx, l.tip.y - cy, lerp(0.5, 1, easeOut(bloom)) * (1 + 0.06 * hv),
+      Math.min(1, fadeOf(l) * bloom * (1 + 0.35 * hv)));
   }
 
   /* ---------- the pot ---------- */

@@ -128,3 +128,12 @@ What changed:
 - Trunk, folder limbs and side branches all longer; side branches scale with screen width so tablets aren't clipped.
 - Pot grows with the tree on big screens (1.3×, 1.1× on shorter screens).
 - Checked at eight screen sizes (phones to 1920×1080, plus an upright tablet): every label in the open level stays on screen and the pot clears the item count. Caught on the way: the pot covering the item count on 1280×720, a label clipped on 360px phones and on an upright tablet.
+
+**#12, Evan**
+> The canopies of the tree should still be bigger, especially the outer branches. I want to be able to click on the canopy as a button to access the page
+
+What changed:
+- Page canopies roughly doubled: 124px on the outer branches, 104px for the centre one (82px / 70px on phones). Folder canopies up to 170px.
+- The whole canopy is now the button: clicking anywhere on it opens the page (or the folder). The keyboard focus ring follows the canopy's shape.
+- Hovering (or focusing) a canopy swells it slightly and deepens its colour; the label darkens with it.
+- Checked at eight screen sizes: no labels off screen, no canopies overlapping each other or another label, the pot clear of the item count. Clicking inside a canopy (not its label) opens the page.

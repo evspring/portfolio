@@ -75,3 +75,14 @@ What changed:
 - Trunk now holds files first and `work/` at its tip on every screen size, so each new branch grows outward from the one before.
 - Once grown, the pot takes you back to the top of the tree. Pages link back with `/#/…`, which skips the pot.
 - Pot pixels are 4px on big screens (3px on phones) so it holds the empty page.
+
+**#7, Evan**
+> Terracotta is better, when the user clicks on the pot it should look more like a young tree that progresses into a more mature tree the more pages you go through
+
+What changed:
+- Pot is terracotta: light, mid and shade clay with a dark brown outline and darker soil.
+- The tree now has an age. 8 places to explore (work/, realtruck/, 4 case studies, about, contact); each new one ages it. Kept in this browser only.
+- Sapling: thin bare trunk, shorter, a few fresh bright leaves at each tip. Mature: trunk ~4× thicker, flared at the soil, dense older moss, leafy clumps along limbs, twigs, a full crown on every branch tip.
+- How: every pixel is generated once at full maturity with the age it needs to appear, so the tree grows smoothly between any two ages. Opening a new folder grows it on the spot; reading a page grows it when you come back (it starts at the age you last saw, then grows).
+- Content pages record the visit themselves, so arriving straight on a case study still counts.
+- Bugs caught on screenshot: the mature end barely differed from the young one (pushed thickness, flare, foliage and crowns much further); leafy tip crowns never appeared (they were set to show past the end of the branch).

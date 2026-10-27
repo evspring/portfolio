@@ -17,7 +17,7 @@ Read DESIGN-BRIEF.md before making design decisions. The one line in it beats an
 
 - Commit secrets, API keys or `.env` files, or print them in output.
 - Deploy as a Cloudflare Worker. This is a Cloudflare Pages static site.
-- Add new colour. Colour comes from the tree's moss (home) and the light strip (Sequence) only.
+- Add new colour. Colour comes from the tree's moss and terracotta pot (home) and the light strip (Sequence) only.
 - Add anything to the home page outside the tree beyond the name, path and item count.
 - Put screenshots on anything but the gray mat.
 - Publish anything marked as under NDA in DESIGN-BRIEF.md.

@@ -36,7 +36,7 @@ Measured from the two original videos (16s at 3102×2160, and 18s at 2452×1802,
 
 ## Signature thing
 
-**The tree.** The home page starts as a planted pot with a small sprout, alone on the page. Click (or tap) the pot and the trunk grows out of it; from there the page is the site as a literal file tree, and nothing else: a name at the top left, the current path at the top (click a folder in it to go back up), and an item count at the bottom.
+**The tree.** The home page starts as a planted terracotta pot with a small sprout, alone on the page. Click (or tap) the pot and a young tree grows out of it; from there the page is the site as a literal file tree, and nothing else: a name at the top left, the current path at the top (click a folder in it to go back up), and an item count at the bottom.
 
 ```
 evan/
@@ -66,7 +66,10 @@ Measured from Finn Taylor's "Literal file tree" (20s, 1516×1080, 50fps).
 - Branches you've moved past thin out (moss drops to ~40%); their labels step back.
 - Closing pulls a branch back toward its folder in ~0.4s.
 
-**How it's ours.** The tree is Evan's site map, not a demo. It starts as a pixel-art pot in stone greys (so moss stays the only colour); the sprout perks up on hover, and the visitor grows the tree themselves. The trunk rises out of the soil and leans right; files sit along each limb and folders at the tip, so every new branch grows outward. The pot is also a way home: clicking it once the tree is grown closes every branch. Every page links back into the tree at its own folder (`/#/work/realtruck`). Coming back from a page (`/#/…`) skips the pot: the tree is already grown. The pot is a little chunkier on big screens (4px pixels vs 3px), where it's alone on the page.
+**How it's ours.** The tree is Evan's site map, not a demo. It starts as a pixel-art terracotta pot; the sprout perks up on hover, and the visitor grows the tree themselves.
+
+**It ages as people explore.** There are 8 places to explore (2 folders, 6 pages). Each new one ages the tree: a sapling (thin bare trunk, a few fresh leaves at the tips, shorter) becomes a mature tree (trunk about four times thicker and flared at the soil, dense moss, foliage clumps, twigs, a full leafy crown on every branch tip). Opening a new folder grows the tree on the spot; reading a page grows it when you come back. Every pixel is generated once at full maturity and carries the age it needs to appear, so growth is smooth. Progress is kept in this browser only (localStorage, `evan-tree-v1`). The trunk rises out of the soil and leans right; files sit along each limb and folders at the tip, so every new branch grows outward. The pot is also a way home: clicking it once the tree is grown closes every branch. Every page links back into the tree at its own folder (`/#/work/realtruck`). Coming back from a page (`/#/…`) skips the pot: the tree is already grown. The pot is a little chunkier on big screens (4px pixels vs 3px), where it's alone on the page.
+
 
 **Access.** Folders are real buttons with `aria-expanded`; files are real links; Tab walks the tree, Escape closes the deepest branch. Reduced motion shows each state without growth. Without JavaScript, the page is a plain nested list of every page.
 
@@ -87,7 +90,7 @@ Measured from Finn Taylor's "Literal file tree" (20s, 1516×1080, 50fps).
 | light 1–6 | `#FF5A36` `#FFB200` `#2FD18B` `#2FA8FF` `#7B5CFF` `#FF4FB8` | The light strip (Sequence case study) only |
 | bark | `#A3A3A0` `#7D7D79` `#262626`, speck `#B8473A` | Tree branches |
 | moss | `#8FE800` `#B4F03A` `#6F8C0A` `#DCEFA6` `#EEF0B4` | Tree moss, the home page's only colour |
-| pot | `#F1F0EC` `#D6D5CF` `#A3A3A0`, soil `#4A4740` | The pot the tree grows from |
+| pot | terracotta `#E59A6C` `#C66B3F` `#9A4B29`, outline `#4F2516`, soil `#3D2A20` | The pot the tree grows from |
 
 **Type:** Instrument Sans, 400/500. A small, calm scale (13 / 15 / 18 / 24 / 36px). Headlines are one weight, no accented words.
 

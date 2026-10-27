@@ -1,0 +1,27 @@
+---
+import Base from '../layouts/Base.astro';
+import { EMAIL, treeLinkFor } from '../data/tree';
+---
+
+<Base title="About — Evan Springer" back={treeLinkFor('/about/')}>
+  <article class="pt-24 sm:pt-32">
+    <h1 class="text-2xl font-medium tracking-[-0.02em]">About</h1>
+    <div class="mt-10 max-w-[60ch] space-y-4 text-lg leading-relaxed">
+      <p>
+        <!-- TODO: Evan's own words -->
+        I'm Evan, a product designer at RealTruck. I work where hardware, software and the
+        people who use them meet: truck accessories that light up from a phone, websites that
+        help people find the right part, and tools for therapists who need to get notes out of
+        the way.
+      </p>
+      <p class="text-quiet">
+        If you're building an app or product and want a designer who stays with it from the
+        first sketch to the shipped screen, I'd like to hear about it.
+      </p>
+    </div>
+    <a
+      href={`mailto:${EMAIL}`}
+      class="mt-10 inline-flex h-11 items-center rounded-[10px] bg-action px-6 text-sm font-medium text-white no-underline"
+    >Email me</a>
+  </article>
+</Base>

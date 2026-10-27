@@ -23,6 +23,17 @@
   --color-light-5: #7b5cff;
   --color-light-6: #ff4fb8;
 
+  /* The tree: pixel bark and moss, sampled from Finn Taylor's "Literal file tree" */
+  --color-bark-light: #a3a3a0;
+  --color-bark: #7d7d79;
+  --color-bark-dark: #262626;
+  --color-bark-speck: #b8473a;
+  --color-moss-lime: #8fe800;
+  --color-moss-bright: #b4f03a;
+  --color-moss-olive: #6f8c0a;
+  --color-moss-pale: #dcefa6;
+  --color-moss-cream: #eef0b4;
+
   --font-sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
 
   /* Small, calm type scale (ratio ~1.25) */

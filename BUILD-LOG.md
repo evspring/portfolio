@@ -46,3 +46,21 @@ What changed:
 - Status and award shown as pill chips, like the reels' tags.
 - Light strip chase rebuilt on the measured motion: a kick every 3.6s (fast attack, long settle) with a slow creep that never stops. Checked the curve numerically against the reel (peak-to-creep ~9:1 vs the reel's ~8:1).
 - Bugs caught on screenshot: "Email me" label invisible (base link colour outside Tailwind's layers beat `text-white`; moved base styles into `@layer base`); phone cards bled off the bottom of the mat (now whole and centred, as in the reels).
+
+## 27 Oct 2026
+
+**#5, Evan**
+> Can we make the home page more like this with different pages of the site being able to be clicked on throughout the tree? Keep it super minimal outside of the tree itself
+
+(Reference attached: Finn Taylor, "Literal file tree".)
+
+What changed:
+- Studied the video: contact sheet at 2fps, full-res crops of the bark and moss, colours sampled, branch growth and camera pan tracked at 25fps. Written up in DESIGN-BRIEF.md under "The tree".
+- Home page is now only the tree: name top left, current path at the top, item count at the bottom.
+- The site as a file tree (`src/data/tree.ts`): `work/` → `realtruck/` (sequence, realtruck-connect, husky-liners) and `mindra.md`; `about.md`; `contact.txt` opens email.
+- Branches drawn pixel by pixel on a canvas: bark core, moss clumps, twigs, red specks. Growth, moss lag, pan, thinning and retraction timed to the reference.
+- First visit: trunk grows, then `work/` opens once by itself. Every page links back to its folder (`/#/work/realtruck`).
+- New About page. Light strip moved to the Sequence case study.
+- Phones: tree grows up from the bottom; folders sit at branch tips so growth heads outward.
+- Accessible: real buttons and links, Tab order follows the tree, Escape closes, reduced motion respected, plain list without JavaScript.
+- Bugs caught on screenshot: moss too sparse and limbs too straight next to the reference (denser clumps, thicker bark, a wave along each limb); labels sitting on branches (each label now checks for branches and other labels before picking a side); phone tree crossing itself (portrait layout); hidden fallback list reachable by Tab (now only shown without JavaScript); header after the tree in Tab order; changing the folder in the address bar didn't update the tree.

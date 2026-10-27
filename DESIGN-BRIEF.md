@@ -15,6 +15,7 @@ People who build apps and products (founders, product leads, hiring managers) de
 | Reference | What to borrow |
 | --- | --- |
 | Basit A. Khan's minimal UI reels (via @insporadesign, Oct 12 2026, and @basit_designs, Oct 13 2026) | Studied frame by frame; see "What the reels do" below. |
+| Finn Taylor's "Literal file tree" (video) | The home page. The site is a file tree: folders grow pixel-moss branches, files open pages. See "The tree" below. |
 | niklaspeterson.com | Structure: a plain one-sentence headline, a short intro, then case studies as large media with a one-line outcome under each. No tricks in the navigation. |
 
 Borrow the feeling, not the layout. These are where it starts, not what it becomes.
@@ -35,12 +36,39 @@ Measured from the two original videos (16s at 3102×2160, and 18s at 2452×1802,
 
 ## Signature thing
 
-**The light strip.** Six light segments under the intro, the same six sections a Velocity 360 step exposes in Sequence. It plays light patterns the way the app does (chase, breathe, wave), and tapping it changes the pattern. It's the one place colour appears on the site. Everything else stays quiet.
+**The tree.** The home page is the site as a literal file tree, and nothing else: a name at the top left, the current path at the top (click a folder in it to go back up), and an item count at the bottom.
 
-Ideas for where it could go next:
-- The strip becomes the progress indicator as you scroll through case studies.
-- On the Sequence case study, the strip lets you try the real controls: pick a colour for each section.
-- The six colours tint each case study's hover state, one per project.
+```
+evan/
+├── work/
+│   ├── realtruck/
+│   │   ├── sequence.md
+│   │   ├── realtruck-connect.md
+│   │   └── husky-liners.md
+│   └── mindra.md
+├── about.md
+└── contact.txt   (opens email)
+```
+
+The structure lives in `src/data/tree.ts`. Add a page there and it grows onto the tree.
+
+**The light strip** moved to the Sequence case study, where it belongs to the work it's about.
+
+## The tree
+
+Measured from Finn Taylor's "Literal file tree" (20s, 1516×1080, 50fps).
+
+**Look.** Pixel-dithered branches on white: a grey bark core with a near-black underside, lime and yellow-green moss pixels in clumps mostly on top, thin single-pixel twigs, the odd red speck. Folders are outlined icons sitting on the branch; files hang just off it. Labels are small grey type with a trailing slash on folders.
+
+**Motion.**
+- A branch grows in ~0.85s: fast at first, then slowing (tip covers ~75% of its length in the first half). Moss fills in just behind the tip.
+- Opening a folder grows its branch from the folder's icon while the view pans ~0.65s to follow it.
+- Branches you've moved past thin out (moss drops to ~40%); their labels step back.
+- Closing pulls a branch back toward its folder in ~0.4s.
+
+**How it's ours.** The tree is Evan's site map, not a demo. On first visit the trunk grows, then `work/` opens by itself once, so people see that folders open. Every page links back into the tree at its own folder (`/#/work/realtruck`). On phones the tree grows upward from the bottom, and folders sit at the tip of each branch so new growth heads outward.
+
+**Access.** Folders are real buttons with `aria-expanded`; files are real links; Tab walks the tree, Escape closes the deepest branch. Reduced motion shows each state without growth. Without JavaScript, the page is a plain nested list of every page.
 
 ## System
 
@@ -56,13 +84,15 @@ Ideas for where it could go next:
 | chip | `#E6E4E0` | Status chips (In progress, iF Design Award entry) |
 | action | `#2D0F12` | The one primary button |
 | rule | `#E4E3DE` | The only line colour |
-| light 1–6 | `#FF5A36` `#FFB200` `#2FD18B` `#2FA8FF` `#7B5CFF` `#FF4FB8` | The light strip only |
+| light 1–6 | `#FF5A36` `#FFB200` `#2FD18B` `#2FA8FF` `#7B5CFF` `#FF4FB8` | The light strip (Sequence case study) only |
+| bark | `#A3A3A0` `#7D7D79` `#262626`, speck `#B8473A` | Tree branches |
+| moss | `#8FE800` `#B4F03A` `#6F8C0A` `#DCEFA6` `#EEF0B4` | Tree moss, the home page's only colour |
 
 **Type:** Instrument Sans, 400/500. A small, calm scale (13 / 15 / 18 / 24 / 36px). Headlines are one weight, no accented words.
 
 **Layout:** One left-aligned column, max 68rem. App work is shown as whole phone cards standing on the warm gray mat (14px corners on the mat, 18px on the cards). The featured project spans full width; the rest pair up, and a lone last card spans full width.
 
-**Motion:** One moment: the light strip. No fade-up on every section. Respect reduced motion.
+**Motion:** One moment: the tree growing. No fade-up on every section. Respect reduced motion.
 
 **Rules:** One primary action per screen (email me). No borders around cards. No labels on screenshots.
 

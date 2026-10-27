@@ -1,14 +1,22 @@
 ---
 import '../styles/global.css';
 
+import { EMAIL } from '../data/tree';
+
 interface Props {
   title?: string;
   description?: string;
+  /** Bare pages (the home tree) supply their own chrome. */
+  bare?: boolean;
+  /** Where "Back" returns to: the tree, opened to this page's folder. */
+  back?: string;
 }
 
 const {
   title = 'Evan Springer — Product designer',
   description = 'Evan Springer is a product designer who helps teams shape and build apps and products.',
+  bare = false,
+  back = '/',
 } = Astro.props;
 ---
 
@@ -20,6 +28,7 @@ const {
     <title>{title}</title>
     <meta name="description" content={description} />
     <meta name="theme-color" content="#ffffff" />
+    <script is:inline>document.documentElement.classList.add('js')</script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -28,22 +37,24 @@ const {
     />
   </head>
   <body class="min-h-screen">
-    <header class="mx-auto flex max-w-[68rem] items-center justify-between px-5 pt-6 sm:px-8">
-      <a href="/" class="text-sm font-medium no-underline">Evan Springer</a>
-      <nav class="flex gap-5 text-sm text-quiet">
-        <a href="/#work" class="no-underline hover:text-ink">Work</a>
-        <a href="/#about" class="no-underline hover:text-ink">About</a>
-        <a href="mailto:evan.a.springer@gmail.com" class="no-underline hover:text-ink">Email</a>
-      </nav>
-    </header>
-
-    <main class="mx-auto max-w-[68rem] px-5 sm:px-8">
+    {bare ? (
       <slot />
-    </main>
+    ) : (
+      <>
+        <header class="mx-auto flex max-w-[68rem] items-center justify-between px-5 pt-6 sm:px-8">
+          <a href="/" class="text-sm font-medium no-underline">Evan Springer</a>
+          <a href={back} class="text-sm text-quiet no-underline hover:text-ink">Back to the tree</a>
+        </header>
 
-    <footer class="mx-auto mt-32 flex max-w-[68rem] justify-between border-t border-rule px-5 py-8 text-sm text-quiet sm:px-8">
-      <span>© {new Date().getFullYear()} Evan Springer</span>
-      <a href="mailto:evan.a.springer@gmail.com" class="no-underline hover:text-ink">evan.a.springer@gmail.com</a>
-    </footer>
+        <main class="mx-auto max-w-[68rem] px-5 sm:px-8">
+          <slot />
+        </main>
+
+        <footer class="mx-auto mt-32 flex max-w-[68rem] justify-between border-t border-rule px-5 py-8 text-sm text-quiet sm:px-8">
+          <span>© {new Date().getFullYear()} Evan Springer</span>
+          <a href={`mailto:${EMAIL}`} class="no-underline hover:text-ink">{EMAIL}</a>
+        </footer>
+      </>
+    )}
   </body>
 </html>

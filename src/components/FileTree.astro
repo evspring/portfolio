@@ -1,0 +1,613 @@
+---
+/*
+  The home page: the site as a literal file tree, after Finn Taylor's
+  "Literal file tree". Folders grow branches, files open pages.
+
+  Motion measured from the reference video (DESIGN-BRIEF.md, "The tree"):
+  - a branch grows in ~0.85s, fast then slowing; moss fills in just behind the tip
+  - opening a folder pans the view ~0.65s to follow the new branch, at the same time
+  - older branches thin out as you go deeper; closing pulls a branch back in ~0.4s
+*/
+import { tree } from '../data/tree';
+// The nested list below holds every page, shown if JavaScript is off.
+---
+
+<div class="tree-root" data-tree>
+  <canvas class="tree-canvas" aria-hidden="true"></canvas>
+  <div class="tree-world" data-world></div>
+
+  <nav class="tree-list" aria-label="Pages">
+    <ul>
+      {tree.children!.map((a) => (
+        <li>
+          {a.kind === 'file' ? <a href={a.href}>{a.name}</a> : <span>{a.name}/</span>}
+          {a.children && (
+            <ul>
+              {a.children.map((b) => (
+                <li>
+                  {b.kind === 'file' ? <a href={b.href}>{b.name}</a> : <span>{b.name}/</span>}
+                  {b.children && (
+                    <ul>
+                      {b.children.map((c) => (
+                        <li><a href={c.href}>{c.name}</a></li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </li>
+      ))}
+    </ul>
+  </nav>
+</div>
+
+<script type="application/json" id="tree-data" set:html={JSON.stringify(tree)} />
+
+<style is:global>
+  .tree-root { position: fixed; inset: 0; overflow: hidden; }
+  .tree-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .tree-world { position: absolute; left: 0; top: 0; will-change: transform; }
+
+  /* Every page as a plain list, for when JavaScript is off. With it on, the tree's own
+     links and folder buttons (with aria-expanded) do the job, so the list steps aside. */
+  .tree-list { padding: 96px 24px; font-size: var(--text-base); line-height: 2; }
+  html.js .tree-list { display: none; }
+  html:not(.js) .tree-list ul ul { padding-left: 1.25rem; }
+
+  .tnode {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 8px;
+    margin: -6px -8px;
+    font: inherit;
+    font-size: 12.5px;
+    line-height: 1;
+    color: var(--color-quiet);
+    background: none;
+    border: 0;
+    white-space: nowrap;
+    text-decoration: none;
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(3px);
+    transition: opacity 0.25s ease, transform 0.35s var(--ease-weight), color 0.15s ease;
+    pointer-events: none;
+  }
+  .tnode.shown { opacity: 1; transform: none; pointer-events: auto; }
+  .tnode.shown.dim { opacity: 0.4; }
+  .tnode.shown.dim:hover, .tnode.shown.dim:focus-visible { opacity: 1; }
+  .tnode:hover, .tnode:focus-visible, .tnode[aria-expanded='true'] { color: var(--color-ink); }
+  .tnode svg { flex: none; width: 16px; height: 16px; fill: var(--color-page); stroke: currentColor; stroke-width: 1.15; stroke-linejoin: round; }
+  .tnode .label { text-shadow: 0 0 3px var(--color-page), 0 0 3px var(--color-page), 0 0 6px var(--color-page); }
+  /* folder labels sit just off the branch; files on the left of a steep branch read leftward */
+  .tnode.label-below .label, .tnode.label-above .label { position: absolute; left: 27px; }
+  .tnode.label-below .label { top: 19px; }
+  .tnode.label-above .label { top: -7px; }
+  .tnode.flip { flex-direction: row-reverse; translate: -100% 0; }
+  .tnode .open-icon { display: none; }
+  .tnode[aria-expanded='true'] .open-icon { display: block; }
+  .tnode[aria-expanded='true'] .closed-icon { display: none; }
+</style>
+
+<script>
+  type TreeNode = { name: string; kind: 'folder' | 'file'; href?: string; children?: TreeNode[] };
+  type Pt = { x: number; y: number; tx: number; ty: number };
+  type Pix = { gx: number; gy: number; s: number; thr: number; moss: boolean };
+  type Branch = {
+    folder: TreeNode;
+    depth: number;
+    key: string;
+    anchor: { x: number; y: number };
+    angle: number;
+    len: number;
+    samples: { x: number; y: number; s: number }[];
+    buckets: Map<string, Pix[]>;
+    nodes: { el: HTMLElement; s: number; node: TreeNode; x: number; y: number; angle: number }[];
+    grow: Tween;
+    moss: Tween;
+    closing: boolean;
+  };
+
+  const root = document.querySelector<HTMLElement>('[data-tree]')!;
+  const canvas = root.querySelector('canvas')!;
+  const ctx = canvas.getContext('2d')!;
+  const world = root.querySelector<HTMLElement>('[data-world]')!;
+  const pathEl = document.querySelector<HTMLElement>('[data-path]')!;
+  const countEl = document.querySelector<HTMLElement>('[data-count]')!;
+  const data: TreeNode = JSON.parse(document.getElementById('tree-data')!.textContent!);
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const G = 3; // size of one tree pixel, in CSS px
+  let W = 0, H = 0, S = 1;
+  // Tall, narrow screens grow the tree upward from the bottom; wide screens grow it left to right.
+  let portrait = false;
+  const trunkAngle = () => (portrait ? -1.3 : -0.06);
+  // How much each new branch turns from the spot it grows from. Alternates so the tree zigzags.
+  const turnFor = (depth: number) =>
+    portrait ? (depth % 2 === 0 ? 0.8 : -0.6) : (depth % 2 === 0 ? -0.78 : 0.6);
+
+  /* ---------- small helpers ---------- */
+  const easeOut = (u: number) => 1 - Math.pow(1 - u, 3);
+  const easeIn = (u: number) => u * u * u;
+  const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+  const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
+
+  class Tween {
+    v: number; from: number; to: number; t0 = 0; dur = 0; ease = easeOut;
+    constructor(v: number) { this.v = this.from = this.to = v; }
+    go(to: number, seconds: number, ease = easeOut) {
+      this.from = this.v; this.to = to; this.t0 = performance.now();
+      this.dur = reduced ? 0 : seconds * 1000; this.ease = ease;
+      wake();
+    }
+    set(v: number) { this.v = this.from = this.to = v; }
+    tick(now: number) {
+      if (this.v === this.to) return false;
+      const u = this.dur ? Math.min(1, (now - this.t0) / this.dur) : 1;
+      this.v = u >= 1 ? this.to : this.from + (this.to - this.from) * this.ease(u);
+      return true;
+    }
+  }
+
+  function hash(str: string) {
+    let h = 2166136261;
+    for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 16777619);
+    return h >>> 0;
+  }
+  function rngFrom(seed: number) {
+    return () => {
+      seed |= 0; seed = (seed + 0x6d2b79f5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  const css = getComputedStyle(document.documentElement);
+  const C = (name: string) => css.getPropertyValue(`--color-${name}`).trim();
+  const BARK = { light: C('bark-light'), mid: C('bark'), dark: C('bark-dark'), speck: C('bark-speck') };
+  const MOSS = [
+    [C('moss-lime'), 0.34],
+    [C('moss-bright'), 0.22],
+    [C('moss-olive'), 0.18],
+    [C('moss-pale'), 0.14],
+    [C('moss-cream'), 0.12],
+  ] as const;
+  const pickMoss = (r: number) => {
+    let acc = 0;
+    for (const [c, w] of MOSS) { acc += w; if (r < acc) return c; }
+    return MOSS[0][0];
+  };
+
+  /* ---------- icons ---------- */
+  const ICON = {
+    closed: '<svg class="closed-icon" viewBox="0 0 16 16"><path d="M1.6 3.6a1 1 0 0 1 1-1h3.5l1.4 1.5h5.9a1 1 0 0 1 1 1v6.8a1 1 0 0 1-1 1H2.6a1 1 0 0 1-1-1z"/></svg>',
+    open: '<svg class="open-icon" viewBox="0 0 16 16"><path d="M1.6 12.4V3.6a1 1 0 0 1 1-1h3.5l1.4 1.5h4.9a1 1 0 0 1 1 1v1.4"/><path d="M1.6 12.4l2.1-5.3h11l-2.1 5.3z"/></svg>',
+    file: '<svg viewBox="0 0 16 16"><path d="M3.6 1.6h5.9l2.9 2.9v9.9H3.6z"/><path d="M9.5 1.6v2.9h2.9M5.8 8h4.4M5.8 10.4h4.4"/></svg>',
+  };
+
+  /* ---------- geometry ---------- */
+  function makeBranch(folder: TreeNode, depth: number, key: string, anchor: { x: number; y: number }, angle: number): Branch {
+    const rnd = rngFrom(hash(key));
+    const n = folder.children?.length ?? 0;
+    const len = depth === 0
+      ? (portrait ? Math.min(H * 0.64, 600) : Math.min(W * 0.74, 1000))
+      : (170 + 105 * n) * S;
+    const bend = depth === 0 ? 0.22 : 0.16 + rnd() * 0.18;
+    const dir = (a: number) => ({ x: Math.cos(a), y: Math.sin(a) });
+    const P0 = anchor;
+    const P3 = { x: P0.x + len * Math.cos(angle), y: P0.y + len * Math.sin(angle) };
+    const d1 = dir(angle + bend);
+    const P1 = { x: P0.x + len * 0.38 * d1.x, y: P0.y + len * 0.38 * d1.y };
+    const P2 = { x: P3.x - len * 0.38 * d1.x, y: P3.y - len * 0.38 * d1.y };
+
+    // the S-curve, then a gentle wave across it so limbs look grown, not drawn
+    const N = 300;
+    const base = Array.from({ length: N + 1 }, (_, i) => {
+      const t = i / N, m = 1 - t;
+      return {
+        x: m * m * m * P0.x + 3 * m * m * t * P1.x + 3 * m * t * t * P2.x + t * t * t * P3.x,
+        y: m * m * m * P0.y + 3 * m * m * t * P1.y + 3 * m * t * t * P2.y + t * t * t * P3.y,
+      };
+    });
+    const amp = clamp(len * 0.03, 5, 18), freq = 1.4 + rnd() * 1.2, phase = rnd() * Math.PI * 2;
+    const samples: { x: number; y: number; s: number }[] = [];
+    let s = 0;
+    base.forEach((p, i) => {
+      const a = base[Math.max(0, i - 1)], c = base[Math.min(N, i + 1)];
+      const dl = Math.hypot(c.x - a.x, c.y - a.y) || 1;
+      const t = i / N;
+      const off = Math.sin(t * Math.PI * freq + phase) * amp * Math.pow(Math.sin(Math.PI * t), 0.7);
+      const x = p.x - ((c.y - a.y) / dl) * off, y = p.y + ((c.x - a.x) / dl) * off;
+      if (samples.length) { const q = samples[samples.length - 1]; s += Math.hypot(x - q.x, y - q.y); }
+      samples.push({ x, y, s });
+    });
+    const L = s;
+    const b: Branch = {
+      folder, depth, key, anchor, angle, len: L, samples,
+      buckets: new Map(), nodes: [], grow: new Tween(0), moss: new Tween(1), closing: false,
+    };
+    buildPixels(b, rnd);
+    return b;
+  }
+
+  function at(b: Branch, s: number): Pt {
+    const sm = b.samples;
+    let lo = 0, hi = sm.length - 1;
+    while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (sm[mid].s < s) lo = mid; else hi = mid; }
+    const a = sm[lo], c = sm[hi];
+    const u = c.s === a.s ? 0 : clamp((s - a.s) / (c.s - a.s), 0, 1);
+    const dx = c.x - a.x, dy = c.y - a.y, dl = Math.hypot(dx, dy) || 1;
+    return { x: lerp(a.x, c.x, u), y: lerp(a.y, c.y, u), tx: dx / dl, ty: dy / dl };
+  }
+
+  /* ---------- pixels: bark core, moss clumps, twigs ---------- */
+  function buildPixels(b: Branch, rnd: () => number) {
+    const cells = new Map<string, { color: string; p: Pix }>();
+    const put = (x: number, y: number, color: string, s: number, moss: boolean, thr = 0) => {
+      const gx = Math.round(x / G), gy = Math.round(y / G), k = gx + ',' + gy;
+      const had = cells.get(k);
+      if (had && (!had.p.moss || moss)) return; // bark wins over moss; first moss wins
+      cells.set(k, { color, p: { gx, gy, s, thr, moss } });
+    };
+
+    const k = lerp(0.72, 1, (S - 0.62) / 0.38);
+    const [w0, w1] = (b.depth === 0 ? [11, 4] : b.depth === 1 ? [8, 3] : [6, 2]).map((v) => v * k);
+    const clumps = Array.from({ length: Math.ceil(b.len / 38) + 2 }, () => rnd());
+    const clump = (s: number) => {
+      const i = Math.floor(s / 38), f = s / 38 - i, u = f * f * (3 - 2 * f);
+      return lerp(clumps[i], clumps[i + 1], u);
+    };
+
+    for (let s = 0; s <= b.len; s += 1.5) {
+      const t = s / b.len;
+      const p = at(b, s);
+      const nx = -p.ty, ny = p.tx; // normal; for a branch heading right this points down
+      const w = lerp(w0, w1, t);
+
+      // bark: dark underside, light top edge, grey middle, the odd red speck
+      for (let k = -w / 2; k <= w / 2; k += 1.4) {
+        const r = rnd();
+        let c = r < 0.55 ? BARK.mid : r < 0.8 ? BARK.light : BARK.dark;
+        if (k > w / 2 - 1.6 && rnd() < 0.75) c = BARK.dark;
+        if (rnd() < 0.008) c = BARK.speck;
+        put(p.x + nx * k, p.y + ny * k, c, s, false);
+      }
+
+      // moss: clumps that sit mostly on top, thinning toward the tip
+      const m = clamp((clump(s) - 0.28) / 0.5, 0, 1);
+      const count = Math.floor(m * 7 * (1 - t * 0.5) + rnd() * 1.3);
+      const R = lerp(w0 * 1.9 + 8, 4, t);
+      for (let i = 0; i < count; i++) {
+        const side = rnd() < 0.74 ? -1 : 1;
+        const off = side * (w / 2 - 1 + Math.pow(rnd(), 1.15) * R);
+        const along = (rnd() - 0.5) * 5;
+        put(
+          p.x + nx * off + p.tx * along,
+          p.y + ny * off + p.ty * along,
+          pickMoss(rnd()), s + 8 + rnd() * 42, true, rnd(),
+        );
+      }
+
+      // twigs: thin single-pixel offshoots
+      if (t > 0.08 && t < 0.9 && rnd() < 0.018) {
+        const up = rnd() < 0.65 ? -1 : 1;
+        const a = Math.atan2(p.ty, p.tx) + up * (0.5 + rnd() * 0.6);
+        const tl = (10 + rnd() * 26) * S;
+        for (let j = 0; j < tl; j += 2) {
+          if (rnd() < 0.85) put(p.x + Math.cos(a) * j, p.y + Math.sin(a) * j, BARK.light, s + j, false);
+        }
+        if (rnd() < 0.6) {
+          for (let q = 0; q < 3; q++)
+            put(p.x + Math.cos(a) * tl + (rnd() - 0.5) * 6, p.y + Math.sin(a) * tl + (rnd() - 0.5) * 6,
+              pickMoss(rnd()), s + tl + 20, true, rnd() * 0.8);
+        }
+      }
+    }
+
+    for (const { color, p } of cells.values()) {
+      if (!b.buckets.has(color)) b.buckets.set(color, []);
+      b.buckets.get(color)!.push(p);
+    }
+  }
+
+  /* ---------- nodes along a branch ---------- */
+  // Does a label box at (x0..x1, y0..y1) sit on any visible branch, or on a label already placed?
+  const placed: { x0: number; x1: number; y0: number; y1: number }[] = [];
+  function blocked(x0: number, x1: number, y0: number, y1: number, extra: Branch) {
+    for (const r of placed) if (x0 < r.x1 && x1 > r.x0 && y0 < r.y1 && y1 > r.y0) return true;
+    for (const br of [...open, extra]) {
+      const sm = br.samples;
+      for (let i = 0; i < sm.length; i += 2) {
+        const p = sm[i];
+        if (p.x > x0 - 5 && p.x < x1 + 5 && p.y > y0 - 6 && p.y < y1 + 6) return true;
+      }
+    }
+    return false;
+  }
+
+  function placeNodes(b: Branch) {
+    // Wide screens: folders first, so new branches sprout near the base, as in the reference.
+    // Tall screens: folders at the tip, so new growth heads outward instead of back across the tree.
+    const folderFirst = !portrait;
+    const kids = [...(b.folder.children ?? [])].sort((a, c) =>
+      a.kind === c.kind ? 0 : (a.kind === 'folder') === folderFirst ? -1 : 1);
+    const n = kids.length;
+    let fileSide = b.depth % 2 ? 1 : -1;
+    if (b.depth === 0) placed.length = 0;
+    kids.forEach((node, i) => {
+      const t = n === 1 ? 0.62 : lerp(0.36, 0.93, i / (n - 1));
+      const s = t * b.len;
+      const p = at(b, s);
+      let x = p.x, y = p.y, flip = false;
+      const isFolder = node.kind === 'folder';
+      const el = document.createElement(isFolder ? 'button' : 'a');
+      el.className = 'tnode';
+      const lw = (node.name.length + (isFolder ? 1 : 0)) * 6.7 + 4;
+      if (!isFolder) {
+        // Try each side of the branch, label right then left, and take the first spot that's clear.
+        const tries: [number, boolean][] = [[fileSide, false], [fileSide, true], [-fileSide, false], [-fileSide, true]];
+        let pick = tries[0], box = { x0: 0, x1: 0, y0: 0, y1: 0 };
+        for (const tr of tries) {
+          const fx = p.x - p.ty * 24 * tr[0], fy = p.y + p.tx * 24 * tr[0];
+          const bx = tr[1] ? { x0: fx - 14 - lw, x1: fx + 8 } : { x0: fx - 8, x1: fx + 14 + lw };
+          box = { ...bx, y0: fy - 8, y1: fy + 8 };
+          if (!blocked(box.x0, box.x1, box.y0, box.y1, b)) { pick = tr; break; }
+          pick = tries[0];
+        }
+        x = p.x - p.ty * 24 * pick[0]; y = p.y + p.tx * 24 * pick[0]; flip = pick[1];
+        fileSide = -pick[0];
+        placed.push(flip ? { x0: x - 14 - lw, x1: x + 8, y0: y - 8, y1: y + 8 } : { x0: x - 8, x1: x + 14 + lw, y0: y - 8, y1: y + 8 });
+        (el as any)._box = placed[placed.length - 1];
+      } else {
+        // keep the folder's label clear of the branch it will grow, and of anything else
+        const childAngle = Math.atan2(p.ty, p.tx) + turnFor(b.depth);
+        const below = { x0: x + 18, x1: x + 22 + lw, y0: y + 9, y1: y + 23 };
+        const above = { x0: x + 18, x1: x + 22 + lw, y0: y - 17, y1: y - 3 };
+        let useBelow = childAngle < -0.2;
+        const pref = useBelow ? below : above, alt = useBelow ? above : below;
+        if (blocked(pref.x0, pref.x1, pref.y0, pref.y1, b) && !blocked(alt.x0, alt.x1, alt.y0, alt.y1, b)) useBelow = !useBelow;
+        el.classList.add(useBelow ? 'label-below' : 'label-above');
+        placed.push(useBelow ? below : above);
+        (el as any)._box = placed[placed.length - 1];
+      }
+      if (flip) el.classList.add('flip');
+      el.innerHTML = (isFolder ? ICON.closed + ICON.open : ICON.file) + `<span class="label">${node.name}${isFolder ? '/' : ''}</span>`;
+      el.style.left = `${Math.round(flip ? x + 24 : x - 8)}px`;
+      el.style.top = `${Math.round(y - 8)}px`;
+      el.tabIndex = -1;
+      if (isFolder) {
+        el.setAttribute('type', 'button');
+        el.setAttribute('aria-expanded', 'false');
+        el.addEventListener('click', () => toggle(b, node));
+      } else {
+        (el as HTMLAnchorElement).href = node.href!;
+      }
+      world.appendChild(el);
+      b.nodes.push({ el, s, node, x: p.x, y: p.y, angle: Math.atan2(p.ty, p.tx) });
+    });
+  }
+
+  /* ---------- state ---------- */
+  const open: Branch[] = []; // trunk first, deepest last
+  const dying: Branch[] = [];
+  const cam = { x: new Tween(0), y: new Tween(0) };
+  let userActed = false;
+
+  function childBranch(parent: Branch, node: TreeNode) {
+    const spot = parent.nodes.find((n) => n.node === node)!;
+    return makeBranch(node, parent.depth + 1, parent.key + '/' + node.name, { x: spot.x, y: spot.y }, spot.angle + turnFor(parent.depth));
+  }
+
+  function growTime(b: Branch) { return 0.5 + b.len / 1600; }
+
+  function openFolder(parent: Branch, node: TreeNode, instant = false) {
+    closeBelow(open.indexOf(parent));
+    const b = childBranch(parent, node);
+    placeNodes(b);
+    open.push(b);
+    instant ? b.grow.set(1) : b.grow.go(1, growTime(b));
+    setExpanded(parent, node, true);
+    refocus(instant);
+  }
+
+  function closeBelow(index: number) {
+    if (open.length > index + 1) forgetLabelsBelow(index);
+    while (open.length > index + 1) {
+      const b = open.pop()!;
+      const parent = open[open.length - 1];
+      setExpanded(parent, b.folder, false);
+      b.closing = true;
+      b.grow.go(0, 0.4, easeIn);
+      dying.push(b);
+    }
+  }
+
+  // Labels on closed branches no longer block anything.
+  function forgetLabelsBelow(index: number) {
+    const keep = new Set(open.slice(0, index + 1).flatMap((b) => b.nodes.map((n) => n.el)));
+    const kept: typeof placed = [];
+    for (const b of open.slice(0, index + 1)) for (const n of b.nodes) {
+      const r = (n.el as any)._box; if (r && keep.has(n.el)) kept.push(r);
+    }
+    placed.length = 0; placed.push(...kept);
+  }
+
+  function toggle(parent: Branch, node: TreeNode) {
+    userActed = true;
+    const i = open.findIndex((b) => b.folder === node);
+    if (i === -1) openFolder(parent, node);
+    else { closeBelow(i - 1); refocus(); }
+  }
+
+  function setExpanded(parent: Branch, node: TreeNode, on: boolean) {
+    parent.nodes.find((n) => n.node === node)?.el.setAttribute('aria-expanded', String(on));
+  }
+
+  // The deepest branch is in focus; branches above it thin out, as in the reference.
+  function refocus(instant = false) {
+    open.forEach((b, i) => {
+      const deepest = i === open.length - 1;
+      const target = deepest ? 1 : 0.42;
+      instant ? b.moss.set(target) : b.moss.go(target, 0.5);
+      // labels on branches you've moved past step back too; the open folder on the path stays clear
+      for (const n of b.nodes) n.el.classList.toggle('dim', !deepest && n.el.getAttribute('aria-expanded') !== 'true');
+    });
+    frame(open[open.length - 1], instant);
+    updateChrome();
+  }
+
+  /* ---------- camera ---------- */
+  const headerSpace = () => (W < 700 ? 72 : 88);
+  function frame(b: Branch, instant = false) {
+    let tx: number, ty: number;
+    if (b.depth === 0) {
+      if (portrait) { tx = -W * 0.12; ty = -(H + 24); } // trunk rises from just below the bottom edge
+      else { tx = 28; ty = -(H * 0.58); } // trunk enters from just past the left edge
+    } else {
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      for (const p of b.samples) { minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x); minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y); }
+      for (const n of b.nodes) {
+        const lw = n.node.name.length * 7 + 40;
+        const flipped = n.el.classList.contains('flip');
+        if (flipped) minX = Math.min(minX, n.x - lw - 24); else maxX = Math.max(maxX, n.x + lw + 24);
+        minY = Math.min(minY, n.y - 34); maxY = Math.max(maxY, n.y + 40);
+      }
+      const pad = W < 700 ? 20 : 72, top = headerSpace(), bottom = 56;
+      const vw = W - pad * 2, vh = H - top - bottom;
+      tx = maxX - minX <= vw ? (minX + maxX) / 2 - W / 2 : minX - pad;
+      ty = maxY - minY <= vh ? (minY + maxY) / 2 - (top + vh / 2) : minY - top;
+    }
+    if (instant) { cam.x.set(tx); cam.y.set(ty); }
+    else { cam.x.go(tx, 0.65); cam.y.go(ty, 0.65); }
+  }
+
+  /* ---------- chrome: path and item count ---------- */
+  function updateChrome() {
+    pathEl.innerHTML = '';
+    open.forEach((b, i) => {
+      if (i) pathEl.insertAdjacentHTML('beforeend', '<span class="sep">/</span>');
+      const last = i === open.length - 1;
+      const seg = document.createElement(last ? 'span' : 'button');
+      seg.textContent = b.folder.name;
+      if (!last) {
+        seg.setAttribute('type', 'button');
+        seg.addEventListener('click', () => { userActed = true; closeBelow(i); refocus(); });
+      } else seg.setAttribute('aria-current', 'location');
+      pathEl.appendChild(seg);
+    });
+    const n = open[open.length - 1].folder.children?.length ?? 0;
+    countEl.textContent = `${n} item${n === 1 ? '' : 's'}`;
+    const hash = open.slice(1).map((b) => b.folder.name).join('/');
+    history.replaceState(null, '', hash ? `#/${hash}` : location.pathname);
+  }
+
+  /* ---------- render loop ---------- */
+  let raf = 0;
+  function wake() { if (!raf) raf = requestAnimationFrame(draw); }
+
+  function draw(now: number) {
+    raf = 0;
+    let busy = cam.x.tick(now) | cam.y.tick(now) ? true : false;
+    for (const b of [...open, ...dying]) busy = b.grow.tick(now) || b.moss.tick(now) || busy;
+
+    const cx = Math.round(cam.x.v), cy = Math.round(cam.y.v);
+    world.style.transform = `translate(${-cx}px, ${-cy}px)`;
+    ctx.clearRect(0, 0, W, H);
+
+    for (let i = dying.length - 1; i >= 0; i--) {
+      const b = dying[i];
+      paint(b, cx, cy);
+      if (b.grow.v <= 0) { b.nodes.forEach((n) => n.el.remove()); dying.splice(i, 1); }
+    }
+    for (const b of open) paint(b, cx, cy);
+
+    if (busy) wake();
+  }
+
+  function paint(b: Branch, cx: number, cy: number) {
+    const reach = b.grow.v * b.len;
+    const moss = b.moss.v * (b.closing ? b.grow.v : 1);
+    for (const [color, pix] of b.buckets) {
+      ctx.fillStyle = color;
+      for (const p of pix) {
+        if (p.s > reach) continue;
+        if (p.moss && p.thr > moss) continue;
+        const x = p.gx * G - cx, y = p.gy * G - cy;
+        if (x < -G || y < -G || x > W || y > H) continue;
+        ctx.fillRect(x, y, G, G);
+      }
+    }
+    for (const n of b.nodes) {
+      const shown = reach >= n.s + 6;
+      if (shown !== n.el.classList.contains('shown')) {
+        n.el.classList.toggle('shown', shown);
+        n.el.tabIndex = shown ? 0 : -1;
+      }
+    }
+  }
+
+  /* ---------- setup ---------- */
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = innerWidth; H = innerHeight; S = clamp(W / 1200, 0.62, 1);
+    portrait = W < 760 && H > W * 1.15;
+    canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function plant(path: string[], animate: boolean) {
+    world.innerHTML = '';
+    open.length = 0; dying.length = 0;
+    const trunk = makeBranch(data, 0, 'evan', { x: 0, y: 0 }, trunkAngle());
+    placeNodes(trunk);
+    open.push(trunk);
+    animate ? trunk.grow.go(1, growTime(trunk)) : trunk.grow.set(1);
+    frame(trunk, true);
+    let parent = trunk;
+    for (const name of path) {
+      const node = parent.folder.children?.find((c) => c.kind === 'folder' && c.name === name);
+      if (!node) break;
+      openFolder(parent, node, true);
+      parent = open[open.length - 1];
+    }
+    refocus(!animate || path.length > 0);
+  }
+
+  document.documentElement.classList.add('js');
+  resize();
+  const startPath = decodeURIComponent(location.hash.replace(/^#\/?/, '')).split('/').filter(Boolean);
+  plant(startPath, startPath.length === 0);
+  wake();
+
+  // First visit: once the trunk has grown, open work/ so people see how folders behave.
+  if (!startPath.length) {
+    setTimeout(() => {
+      const work = data.children?.find((c) => c.name === 'work');
+      if (!userActed && work && open.length === 1) openFolder(open[0], work);
+    }, reduced ? 0 : 1500);
+  }
+
+  let resizeTimer = 0;
+  addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(() => {
+      const path = open.slice(1).map((b) => b.folder.name);
+      resize(); plant(path, false); wake();
+    }, 150);
+  });
+
+  // A link to another folder on this page (e.g. /#/work) replants the tree there.
+  addEventListener('hashchange', () => {
+    const path = decodeURIComponent(location.hash.replace(/^#\/?/, '')).split('/').filter(Boolean);
+    userActed = true; plant(path, false); wake();
+  });
+
+  addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && open.length > 1) { userActed = true; closeBelow(open.length - 2); refocus(); }
+  });
+</script>

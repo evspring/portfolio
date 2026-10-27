@@ -137,3 +137,13 @@ What changed:
 - The whole canopy is now the button: clicking anywhere on it opens the page (or the folder). The keyboard focus ring follows the canopy's shape.
 - Hovering (or focusing) a canopy swells it slightly and deepens its colour; the label darkens with it.
 - Checked at eight screen sizes: no labels off screen, no canopies overlapping each other or another label, the pot clear of the item count. Clicking inside a canopy (not its label) opens the page.
+
+**#13, Evan**
+> Make the branches bigger too, as the tree goes higher pull the canopies closer together so it looks more like a tree
+
+What changed:
+- Branches about 1.3–1.6× thicker: trunk 36px at the soil (with a wider flare), folder limbs 20px, page limbs 12px.
+- The tree tapers as it climbs: each level's side branches get shorter (100%, 80%, 66%) and its fan narrower, so canopies gather into a crown that's wide at the bottom and tighter at the top.
+- Branches curl, so a canopy can land nearer the fork than its branch length suggests: each new branch now grows a little longer until its canopy is clear of the fork's canopy and its siblings'. Canopies cluster without overlapping, so each stays its own button.
+- Phones: the middle canopy at the top sits higher than its neighbours, and side labels can lean outward above their canopy, so no label runs off a 360px screen.
+- Checked at eight screen sizes: no labels off screen, no canopies overlapping, pot clear of the item count, clicking inside a canopy opens its page.

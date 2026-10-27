@@ -251,19 +251,32 @@ import { tree } from '../data/tree';
 
   /* ---------- sizes ---------- */
   const k = () => lerp(0.72, 1, (S - 0.62) / 0.38);
-  function sizeFor(kind: Kind, depth: number, center: boolean): { len: number; w: [number, number] } {
+  // How much a level's spread shrinks as the tree climbs: wide at the bottom, gathering
+  // toward the top like a crown.
+  const taper = (depth: number) => [1, 1, 0.8, 0.66, 0.56][Math.min(depth, 4)];
+
+  // forkHalf: half the size of the canopy this limb grows out of (0 for the trunk's fork).
+  // Limbs never get shorter than it takes to keep their canopy clear of that one.
+  function sizeFor(kind: Kind, depth: number, center: boolean, forkHalf = 0): { len: number; w: [number, number] } {
     const kk = k();
+    const W2 = (a: number, b: number): [number, number] => [a * kk, b * kk];
     // shorter screens get a slightly shorter trunk, so pot, fork and canopies all fit at once
-    if (kind === 'trunk') return { len: clamp(H * (H < 820 ? 0.3 : 0.34), 170, 400), w: [28 * kk, 11 * kk] };
-    if (kind === 'folder') return { len: clamp(H * 0.23, 140, 240), w: (depth === 1 ? [13, 6] : [10, 4.5]).map((v) => v * kk) as [number, number] };
-    // pages on the sides reach far out, so each level spreads wide like a family tree
-    const side = narrow ? 128 : clamp(W * 0.2, 150, 290); // wide screens spread further
-    const base = center ? (narrow ? 108 : side * 0.66) : side;
-    return { len: base, w: (depth === 1 ? [7.5, 2.8] : [6.5, 2.4]).map((v) => v * kk) as [number, number] };
+    if (kind === 'trunk') return { len: clamp(H * (H < 820 ? 0.3 : 0.34), 170, 400), w: W2(36, 15) };
+    if (kind === 'folder') {
+      const want = clamp(H * 0.23, 140, 240) * (depth === 1 ? 1 : 0.84);
+      const min = forkHalf + canopyFor(depth) / 2 + 22;
+      return { len: Math.max(want, min), w: depth === 1 ? W2(20, 9) : W2(15, 7) };
+    }
+    const side = (narrow ? 128 : clamp(W * 0.2, 150, 290)) * taper(depth); // wide screens spread further
+    // on phones the middle page sits higher than its neighbours, so their labels stack instead of colliding
+    const want = center ? (narrow ? 158 : side * 0.68) : side;
+    const min = (forkHalf || 18) + leafFor(center, depth) / 2 + 14;
+    return { len: Math.max(want, min), w: depth === 1 ? W2(12, 4.5) : depth === 2 ? W2(10, 4) : W2(8.5, 3.5) };
   }
   const canopyFor = (depth: number) => (narrow ? (depth === 1 ? 128 : 112) : (depth === 1 ? 170 : 150)) * k();
   // pages' canopies: big enough to read as the thing you click; the ones out on the sides biggest
-  const leafFor = (center: boolean) => (narrow ? (center ? 70 : 82) : (center ? 104 : 124)) * k();
+  const leafFor = (center: boolean, depth = 1) =>
+    (narrow ? (center ? 70 : 82) * (depth >= 3 ? 0.86 : 1) : (center ? 104 : 124)) * k();
 
   function makeCanopy(size: number, light: string, deep: string, rnd: () => number): Canopy {
     const sq = blobShape(size / 2, 5.5, 1, 1, 28);
@@ -309,9 +322,10 @@ import { tree } from '../data/tree';
 
   /* ---------- geometry ---------- */
   function makeLimb(node: TreeNode, kind: Kind, depth: number, key: string, parent: Limb | null,
-                    anchor: P, angle: number, center: boolean): Limb {
+                    anchor: P, angle: number, center: boolean, stretch = 1): Limb {
     const rnd = rngFrom(hash(key));
-    const { len, w } = sizeFor(kind, depth, center);
+    const size = sizeFor(kind, depth, center, parent ? parent.crownSize / 2 : 0);
+    const len = size.len * stretch, w = size.w;
     const dir = (a: number) => ({ x: Math.cos(a), y: Math.sin(a) });
     // Limbs that lean out to the side leave flatter and curl upward; limbs up the middle
     // get a gentle S.
@@ -359,7 +373,7 @@ import { tree } from '../data/tree';
       samples.forEach((q, i) => {
         const t = q.s / limb.len;
         const p = at(limb, q.s);
-        const flare = kind === 'trunk' ? 22 * kk * Math.pow(Math.max(0, 1 - t / 0.12), 2) : 0;
+        const flare = kind === 'trunk' ? 26 * kk * Math.pow(Math.max(0, 1 - t / 0.12), 2) : 0;
         const ww = (lerp(w[0], w[1], Math.pow(t, 0.8)) + flare) * wf * (1 + 0.08 * Math.sin(i * 0.21 + ph));
         const nx = -p.ty, ny = p.tx;
         l.push({ x: q.x + nx * ww / 2, y: q.y + ny * ww / 2 });
@@ -387,7 +401,7 @@ import { tree } from '../data/tree';
 
     // Folders bloom into a big canopy; pages end in a small one.
     if (kind !== 'trunk') {
-      const size = kind === 'folder' ? canopyFor(depth) : leafFor(center);
+      const size = kind === 'folder' ? canopyFor(depth) : leafFor(center, depth);
       const pick = hash(key) % 3;
       const [light, deep] = kind === 'folder'
         ? (pick === 0 ? [MINT, LEAVES[1]] : pick === 1 ? [LEAVES[0], LEAVES[2]] : [MINT, LEAVES[2]])
@@ -419,7 +433,10 @@ import { tree } from '../data/tree';
   // pages spread out to the sides on the same level.
   function fanFor(kids: TreeNode[], depth: number): number[] {
     const n = kids.length;
-    const spread = narrow ? 1.0 : 1.2; // radians from straight up
+    // radians from straight up; higher levels fan narrower so the crown draws in
+    const spread = narrow
+      ? 1.0 * [1, 1, 0.86, 0.68, 0.62][Math.min(depth + 1, 4)]
+      : 1.2 * [1, 1, 0.86, 0.76, 0.7][Math.min(depth + 1, 4)];
     let slots: number[];
     if (n === 1) slots = [0];
     else if (n === 2 && kids.some((c) => c.kind === 'folder')) slots = [0, (depth % 2 ? -1 : 1) * spread];
@@ -437,9 +454,27 @@ import { tree } from '../data/tree';
     const slots = fanFor(kids, f.depth);
     const tipAngle = Math.atan2(f.tip.ty, f.tip.tx);
     const base = lerp(UP, tipAngle, 0.3);
-    const made = kids.map((node, i) =>
-      makeLimb(node, node.kind === 'folder' ? 'folder' : 'file', f.depth + 1, `${f.key}/${node.name}`, f,
-        { x: f.tip.x, y: f.tip.y }, base + slots[i], Math.abs(slots[i]) < 0.2));
+    // Branches curl, so a canopy can land closer to the fork than its branch length suggests.
+    // Grow each branch a little longer until its canopy is clear of the fork's and its siblings'.
+    const boxOf = (l: Limb, pad = 0): Box => {
+      const h = l.crownSize / 2 + pad;
+      return { x0: l.tip.x - h, x1: l.tip.x + h, y0: l.tip.y - h, y1: l.tip.y + h };
+    };
+    const hits = (a: Box, b: Box) => a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0;
+    const taken: Box[] = f.crownSize ? [boxOf(f, 8)] : [];
+    const order = kids.map((_, i) => i).sort((a, b) => Math.abs(slots[a]) - Math.abs(slots[b]));
+    const made: Limb[] = [];
+    for (const i of order) {
+      const node = kids[i];
+      let l: Limb, stretch = 1;
+      do {
+        l = makeLimb(node, node.kind === 'folder' ? 'folder' : 'file', f.depth + 1, `${f.key}/${node.name}`, f,
+          { x: f.tip.x, y: f.tip.y }, base + slots[i], Math.abs(slots[i]) < 0.2, stretch);
+        stretch += 0.06;
+      } while (taken.some((t) => hits(boxOf(l, 4), t)) && stretch < 1.8);
+      taken.push(boxOf(l, 4));
+      made[i] = l;
+    }
     f.kids = made;
     limbs.push(...made);
     // canopies first, so labels can steer around them
@@ -496,13 +531,15 @@ import { tree } from '../data/tree';
     const left = spot('read-left', -h - 6, isFolder ? h * 0.55 : 0);
     const over = spot('read-centre', 0, -h - 10);
     const under = spot('read-centre', 0, h + 10);
+    // above the canopy but leaning outward, away from the stems in the middle
+    const overOut = Math.cos(l.angle) < 0 ? spot('read-left', h, -h - 10) : spot('', -h, -h - 10);
     // Folders: beside the lower corner of the canopy, clear of the stem below and the limbs above.
     // Pages read outward; on phones every page label sits above its canopy so none run off screen.
     const leansLeft = Math.cos(l.angle) < -0.2;
     const outward = leansLeft ? [left, right] : [right, left];
     const tries: Spot[] = isFolder
       ? [right, left, under]
-      : narrow ? [over, ...outward, under] : [...outward, over, under];
+      : narrow ? [over, overOut, ...outward, under] : [...outward, over, under];
     const pick = tries.find((t) => !blocked(t.box, l)) ?? tries[0];
     if (pick.cls) el.classList.add(pick.cls);
     l.box = pick.box;

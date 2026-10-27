@@ -1,0 +1,76 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import LightStrip from '../components/LightStrip.astro';
+
+const work = (await getCollection('work')).sort((a, b) => a.data.order - b.data.order);
+
+// A card left alone in the last row spans the full width instead of leaving a hole.
+const pairs = work.filter((w) => !w.data.featured);
+const isOrphan = (i: number) =>
+  pairs.length % 2 === 1 && !work[i].data.featured && work[i] === pairs.at(-1);
+---
+
+<Base>
+  <!-- Hero: who, what, and the one signature thing -->
+  <section class="pt-28 pb-24 sm:pt-40 sm:pb-32">
+    <h1 class="max-w-[20ch] text-2xl font-medium leading-[1.15] tracking-[-0.02em] text-balance">
+      I design apps and products, and help teams build them.
+    </h1>
+    <p class="mt-5 max-w-[46ch] text-lg leading-relaxed text-quiet">
+      I'm Evan, a product designer at RealTruck. Most recently I designed Sequence,
+      the app that puts a truck's lighting in its owner's hands.
+    </p>
+    <div class="mt-14">
+      <LightStrip />
+    </div>
+  </section>
+
+  <!-- Work -->
+  <section id="work" class="scroll-mt-10">
+    <h2 class="mb-6 text-sm text-quiet">Selected work</h2>
+    <ul class="grid gap-x-6 gap-y-16 sm:grid-cols-2">
+      {work.map((item, i) => (
+        <li class:list={[(item.data.featured || isOrphan(i)) && 'sm:col-span-2']}>
+          <a href={`/work/${item.id}/`} class="group block no-underline">
+            <div
+              class:list={[
+                'mat grid place-items-center rounded-(--radius-mat) bg-mat',
+                item.data.featured || isOrphan(i) ? 'aspect-[16/8]' : 'aspect-[4/3]',
+              ]}
+            >
+              <!-- TODO: replace with a real screen on the mat -->
+              <span class="text-sm text-quiet">{item.data.title} screens</span>
+            </div>
+            <div class="mt-4 flex items-baseline justify-between gap-4">
+              <h3 class="text-base font-medium group-hover:underline underline-offset-4">
+                {item.data.title}
+              </h3>
+              <span class="shrink-0 text-sm text-quiet">
+                {item.data.status ?? item.data.award ?? item.data.year}
+              </span>
+            </div>
+            <p class="mt-1 max-w-[56ch] text-quiet">{item.data.summary}</p>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <!-- About -->
+  <section id="about" class="mt-36 grid scroll-mt-10 gap-6 sm:grid-cols-[1fr_2fr]">
+    <h2 class="text-sm text-quiet">About</h2>
+    <div class="max-w-[60ch] space-y-4 text-lg leading-relaxed">
+      <p>
+        <!-- TODO: Evan's own words -->
+        I work where hardware, software and the people who use them meet: truck
+        accessories that light up from a phone, websites that help people find the right
+        part, and tools for therapists who need to get notes out of the way.
+      </p>
+      <p class="text-quiet">
+        If you're building an app or product and want a designer who stays with it from the
+        first sketch to the shipped screen, <a href="mailto:hello@example.com" class="text-ink underline underline-offset-4">send me an email</a>.
+      </p>
+    </div>
+  </section>
+</Base>

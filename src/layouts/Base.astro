@@ -1,0 +1,49 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = 'Evan Springer — Product designer',
+  description = 'Evan Springer is a product designer who helps teams shape and build apps and products.',
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="min-h-screen">
+    <header class="mx-auto flex max-w-[68rem] items-center justify-between px-5 pt-6 sm:px-8">
+      <a href="/" class="text-sm font-medium no-underline">Evan Springer</a>
+      <nav class="flex gap-5 text-sm text-quiet">
+        <a href="/#work" class="no-underline hover:text-ink">Work</a>
+        <a href="/#about" class="no-underline hover:text-ink">About</a>
+        <a href="mailto:hello@example.com" class="no-underline hover:text-ink">Email</a>
+      </nav>
+    </header>
+
+    <main class="mx-auto max-w-[68rem] px-5 sm:px-8">
+      <slot />
+    </main>
+
+    <footer class="mx-auto mt-32 flex max-w-[68rem] justify-between border-t border-rule px-5 py-8 text-sm text-quiet sm:px-8">
+      <span>© {new Date().getFullYear()} Evan Springer</span>
+      <a href="mailto:hello@example.com" class="no-underline hover:text-ink">hello@example.com</a>
+    </footer>
+  </body>
+</html>

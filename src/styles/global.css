@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+/*
+  Design tokens — the single source of truth for colour, type and spacing.
+  Change a value here and it changes everywhere.
+*/
+@theme static {
+  --color-page: #ffffff;
+  --color-ink: #1d2126;      /* body text and headings */
+  --color-quiet: #6c7178;    /* secondary text */
+  --color-mat: #eef0f2;      /* the gray mat every screenshot sits on */
+  --color-rule: #e3e5e8;     /* the only line colour */
+
+  /* The Sequence light colours — the site's one source of colour */
+  --color-light-1: #ff5a36;
+  --color-light-2: #ffb200;
+  --color-light-3: #2fd18b;
+  --color-light-4: #2fa8ff;
+  --color-light-5: #7b5cff;
+  --color-light-6: #ff4fb8;
+
+  --font-sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+
+  /* Small, calm type scale (ratio ~1.25) */
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2.25rem;
+
+  --radius-mat: 14px;
+  --ease-weight: cubic-bezier(0.22, 1, 0.36, 1); /* things that move with weight */
+}
+
+html {
+  background: var(--color-page);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 100%;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-size: var(--text-base);
+  line-height: 1.55;
+}
+
+::selection { background: var(--color-mat); }
+
+a { color: inherit; }
+
+:focus-visible {
+  outline: 2px solid var(--color-light-4);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

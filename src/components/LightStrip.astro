@@ -1,0 +1,107 @@
+---
+/*
+  The site's one signature thing: six light segments, the same six sections
+  a Velocity 360 step exposes in Sequence. It plays light patterns the way the
+  app does. Click/tap it to change the pattern.
+*/
+const patterns = ['chase', 'breathe', 'wave'] as const;
+---
+
+<button
+  type="button"
+  class="light-strip group"
+  data-pattern="chase"
+  aria-label="Change the light pattern"
+  data-patterns={patterns.join(',')}
+>
+  {Array.from({ length: 6 }, (_, i) => (
+    <span class="seg" style={`--i:${i}; --c: var(--color-light-${i + 1})`} />
+  ))}
+  <span class="caption" aria-live="polite">Chase</span>
+</button>
+
+<style>
+  .light-strip {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 6px;
+    width: 100%;
+    max-width: 30rem;
+    text-align: left;
+    padding: 0;
+    background: none;
+    border: 0;
+    cursor: pointer;
+  }
+
+  /* Each segment is an unlit step section (mat gray) with its light layered on top */
+  .seg {
+    position: relative;
+    height: 12px;
+    border-radius: 999px;
+    background: var(--color-mat);
+  }
+  .seg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--c);
+    opacity: 0;
+  }
+
+  .caption {
+    position: absolute;
+    left: 0;
+    top: calc(100% + 10px);
+    font-size: var(--text-sm);
+    color: var(--color-quiet);
+  }
+
+  /* chase: one light runs down the step */
+  [data-pattern='chase'] .seg::after {
+    animation: chase 2.4s var(--ease-weight) infinite;
+    animation-delay: calc(var(--i) * 0.18s);
+  }
+  @keyframes chase {
+    0%, 100% { opacity: 0; box-shadow: none; }
+    12% { opacity: 1; box-shadow: 0 0 18px -2px var(--c); }
+    45% { opacity: 0; box-shadow: none; }
+  }
+
+  /* breathe: every section together, slow */
+  [data-pattern='breathe'] .seg::after {
+    animation: breathe 3.2s ease-in-out infinite;
+  }
+  @keyframes breathe {
+    0%, 100% { opacity: 0.15; box-shadow: none; }
+    50% { opacity: 1; box-shadow: 0 0 22px -4px var(--c); }
+  }
+
+  /* wave: a swell that crosses the whole step */
+  [data-pattern='wave'] .seg::after {
+    animation: wave 1.8s ease-in-out infinite alternate;
+    animation-delay: calc(var(--i) * 0.12s);
+  }
+  @keyframes wave {
+    from { opacity: 0.1; transform: scaleY(1); }
+    to { opacity: 1; transform: scaleY(1.6); box-shadow: 0 0 16px -4px var(--c); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .seg::after { opacity: 1 !important; animation: none !important; }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('.light-strip').forEach((strip) => {
+    const list = (strip.dataset.patterns ?? 'chase').split(',');
+    const caption = strip.querySelector('.caption')!;
+    strip.addEventListener('click', () => {
+      const next = list[(list.indexOf(strip.dataset.pattern!) + 1) % list.length];
+      strip.dataset.pattern = next;
+      caption.textContent = next[0].toUpperCase() + next.slice(1);
+    });
+  });
+</script>

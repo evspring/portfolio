@@ -56,9 +56,8 @@ import { tree } from '../data/tree';
 <style is:global>
   /* the sky is drawn behind everything by PaperSky; the tree is painted over it */
   .tree-root { position: fixed; inset: 0; overflow: hidden; }
-  .tree-root.panning .tree-world { pointer-events: none; }
-  /* coming back from a page: hide the tree until it starts rising into view */
-  html.pan-return .tree-canvas, html.pan-return .tree-world { visibility: hidden; }
+  /* travels as one piece in the pan between the tree and a page (see global.css) */
+  .tree-root { view-transition-name: tree; }
   .tree-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
   .tree-world { position: absolute; left: 0; top: 0; will-change: transform; }
 
@@ -558,13 +557,7 @@ import { tree } from '../data/tree';
       el.addEventListener('click', () => toggle(l));
     } else {
       (el as HTMLAnchorElement).href = l.node.href!;
-      // pages open with the canopy swelling to fill the screen
-      el.addEventListener('click', (e) => {
-        const href = l.node.href!;
-        if (href.startsWith('mailto:') || reduced || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-        e.preventDefault();
-        openPage(l);
-      });
+      // pages open with a pan up into the page: see the view transition in global.css
     }
     const hover = (on: boolean) => l.hover.go(on ? 1 : 0, on ? 0.35 : 0.5);
     el.addEventListener('pointerenter', () => hover(true));
@@ -875,55 +868,6 @@ import { tree } from '../data/tree';
     refocus();
   }
 
-  /* ---------- the page transition: a pan up into the page ---------- */
-  // Pages live above the tree. Opening one tilts the view up: the tree drops away below
-  // (speeding up), the page slides down into place from above (slowing down) at the same
-  // speed, so it reads as one continuous pan. The sky holds still behind both.
-  // Going back tilts down: the page lifts away and the tree rises back into view.
-  const PAN_KEY = 'tree-pan';
-  const PAN_TIME = 0.55; // seconds for each half; the page's half is in global.css
-  const chrome = [...document.querySelectorAll<HTMLElement>('[data-path], [data-count], header h1')];
-  const fadeChrome = (show: boolean) => chrome.forEach((el) => {
-    el.style.transition = `opacity ${show ? 0.4 : 0.25}s ease`;
-    el.style.opacity = show ? '' : '0';
-  });
-
-  function openPage(l: Limb) {
-    const href = l.node.href!;
-    try { sessionStorage.setItem(PAN_KEY, JSON.stringify({ way: 'in', href, at: Date.now() })); } catch {}
-    root.classList.add('panning');
-    fadeChrome(false);
-    cam.y.go(cam.y.v - H * 1.04, PAN_TIME, easeIn); // the view rises; the tree drops away
-    setTimeout(() => { location.href = href; }, PAN_TIME * 1000);
-  }
-
-  // Coming back from a page: the tree rises back into view from below.
-  function returnFromPage() {
-    const html = document.documentElement;
-    let d: { way: string; href: string; at: number } | null = null;
-    try { d = JSON.parse(sessionStorage.getItem(PAN_KEY) || 'null'); sessionStorage.removeItem(PAN_KEY); } catch {}
-    if (d && d.way === 'out' && Date.now() - d.at < 4000 && !reduced) {
-      const target = cam.y.v;
-      cam.y.set(target - H * 1.04);
-      fadeChrome(false);
-      requestAnimationFrame(() => {
-        html.classList.remove('pan-return');
-        cam.y.go(target, PAN_TIME, easeOut);
-        setTimeout(() => fadeChrome(true), PAN_TIME * 600);
-      });
-    } else html.classList.remove('pan-return');
-  }
-
-  // The browser's back button can restore this page mid-pan; put the tree back where it was.
-  addEventListener('pageshow', (e) => {
-    if (!(e as PageTransitionEvent).persisted) return;
-    root.classList.remove('panning');
-    document.documentElement.classList.remove('pan-return');
-    fadeChrome(true);
-    refocus(true);
-    wake();
-  });
-
   /* ---------- setup ---------- */
   function resize() {
     DPR = Math.min(window.devicePixelRatio || 1, 2);
@@ -968,7 +912,6 @@ import { tree } from '../data/tree';
   const start = readHash();
   planted = start.grown;
   plant(start.path);
-  returnFromPage();
   wake();
 
   let resizeTimer = 0;

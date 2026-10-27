@@ -5,7 +5,7 @@ import FileTree from '../components/FileTree.astro';
 
 <Base bare>
   <!-- The only chrome: who, where you are in the tree, and how many items are here -->
-  <header class="pointer-events-none fixed inset-x-0 top-0 z-10 grid grid-cols-[1fr_auto_1fr] items-baseline gap-4 px-5 pt-6 text-[12.5px] sm:px-8">
+  <header style="view-transition-name: tree-head" class="pointer-events-none fixed inset-x-0 top-0 z-10 grid grid-cols-[1fr_auto_1fr] items-baseline gap-4 px-5 pt-6 text-[12.5px] sm:px-8">
     <h1 class="pointer-events-auto font-medium whitespace-nowrap">
       Evan Springer<span class="hidden font-normal text-quiet sm:inline">, product designer</span>
     </h1>
@@ -13,7 +13,7 @@ import FileTree from '../components/FileTree.astro';
     <span></span>
   </header>
   <FileTree />
-  <p class="fixed inset-x-0 bottom-5 text-center text-[12px] text-quiet" data-count aria-live="polite">Click the pot</p>
+  <p style="view-transition-name: tree-count" class="fixed inset-x-0 bottom-5 text-center text-[12px] text-quiet" data-count aria-live="polite">Click the pot</p>
 </Base>
 
 <style is:global>

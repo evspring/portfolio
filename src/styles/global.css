@@ -83,14 +83,45 @@
 }
 
 /*
-  The pan between the tree and a page (see FileTree.astro and Base.astro). Pages live above the
-  tree. The tree's half speeds up as it drops away (ease-in); the page's half starts at that same
-  speed and slows into place (ease-out), so the two halves read as one pan. 0.55s each.
+  The pan between the tree and a page. Pages live above the tree.
+
+  The browser runs it as one animation across the page change (a cross-document view
+  transition): it loads the new page while the old one is still showing, then plays both halves
+  back to back, so there's no pause in the middle. The tree travels as one piece ("tree") and
+  so does a page ("doc"); the sky is identical on every page and stays put.
+
+  One continuous ease-in-out, 1.3s: the first half eases in gently (ease-in sine), the second
+  starts at the very same speed and eases out (ease-out sine).
+    tree → page: the tree drops away below, then the page comes down into place from above.
+    page → tree: the page lifts away upward, then the tree rises into view from below.
+  Browsers without cross-document view transitions (Firefox, for now) just open the page.
 */
-html.pan-arrive .pan-content { animation: pan-down-into-place 0.55s cubic-bezier(0.33, 1, 0.68, 1) both; }
-html.pan-leave .pan-content { animation: pan-lift-away 0.55s cubic-bezier(0.32, 0, 0.67, 0) both; pointer-events: none; }
-@keyframes pan-down-into-place { from { transform: translateY(-104vh); } to { transform: none; } }
-@keyframes pan-lift-away { from { transform: none; } to { transform: translateY(-104vh); } }
+@view-transition { navigation: auto; }
+.pan-content { view-transition-name: doc; }
+::view-transition-group(tree), ::view-transition-group(doc) { animation: none; }
+/* the sky is the same on both sides and stays put */
+::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+/* the tree's name, path and item count fade out as it leaves and back in as it settles */
+::view-transition-group(tree-head), ::view-transition-group(tree-count) { animation: none; }
+::view-transition-old(tree-head), ::view-transition-old(tree-count) { animation: 0.3s ease both pan-fade-out; }
+::view-transition-new(tree-head), ::view-transition-new(tree-count) { animation: 0.45s ease 1.05s both pan-fade-in; }
+/* a page is taller than the screen: carry only the slice that's on screen (--vt-scroll is how
+   far down the page was scrolled when you left it), so both pieces travel exactly one screen */
+::view-transition-new(doc) { clip-path: inset(0 0 calc(100% - 100vh) 0); }
+::view-transition-old(doc) { clip-path: inset(var(--vt-scroll, 0px) 0 calc(100% - var(--vt-scroll, 0px) - 100vh) 0); }
+::view-transition-old(tree) { animation: 0.65s cubic-bezier(0.12, 0, 0.39, 0) both pan-out-down; }
+::view-transition-new(doc) { animation: 0.65s cubic-bezier(0.61, 1, 0.88, 1) 0.65s both pan-in-from-top; }
+::view-transition-old(doc) { animation: 0.65s cubic-bezier(0.12, 0, 0.39, 0) both pan-out-up; }
+::view-transition-new(tree) { animation: 0.65s cubic-bezier(0.61, 1, 0.88, 1) 0.65s both pan-in-from-below; }
+@keyframes pan-fade-out { to { opacity: 0; } }
+@keyframes pan-fade-in { from { opacity: 0; } }
+@keyframes pan-out-down { to { translate: 0 104vh; } }
+@keyframes pan-in-from-top { from { translate: 0 -104vh; } }
+@keyframes pan-out-up { to { translate: 0 -104vh; } }
+@keyframes pan-in-from-below { from { translate: 0 104vh; } }
+@media (prefers-reduced-motion: reduce) {
+  @view-transition { navigation: none; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

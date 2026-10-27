@@ -187,3 +187,14 @@ What changed:
 - "Back to the tree" reverses it: the page lifts away upward, the tree rises back into view from below.
 - One sky for the whole site (`PaperSky.astro`): paper, glows, faint streaks and grain, drawn identically on every page before the first frame and never moving, so only the tree and the page travel.
 - Checked: both directions, the hand-off frame (empty paper on both sides), and the browser back button mid-flow.
+
+**#18, Evan**
+> Get rid of the stutter and make it so that the initial movement is slower
+
+What changed:
+- The stutter was the page load in the middle: the tree's half ended at full speed, the browser stopped to load the next page, then the page's half began. Now the browser runs the whole pan as one cross-document view transition: it loads the new page first, then plays both halves back to back with no pause.
+- Gentler start: one continuous ease-in-out over 1.3s (ease-in sine into ease-out sine at matched speed), instead of a sharp ease-in into the gap.
+- Only the on-screen slice of a page travels (even when scrolled), so both halves move exactly one screen.
+- The tree's name, path and item count fade with the tree instead of popping.
+- Caught on the way: the new page appeared all at once at first, because the browser captured it before its content was read in (fixed by holding the first paint until it is); the page's lower half showed early because the whole tall page was moving one screen (fixed by carrying only the visible slice).
+- Firefox doesn't support this yet: pages just open there, no stutter.

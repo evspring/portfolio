@@ -156,10 +156,11 @@ The trunk rises straight out of the soil to the first fork. The pot is also a wa
 
 ## The page transition: a pan
 
-Pages live above the tree. Opening one tilts the view up: the tree drops away below, speeding up (ease-in, 0.55s), while the name and path fade; the page then slides down into place from above, starting at the same speed and slowing to a stop (ease-out, 0.55s), so the two halves read as one continuous pan. "Back to the tree" tilts down: the page lifts away upward and the tree rises back into view from below.
+Pages live above the tree. Opening one tilts the view up: the tree drops away below, then the page comes down into place from above. "Back to the tree" tilts down: the page lifts away upward, then the tree rises back into view.
 
-The sky (paper, rose and sage glows, faint upright streaks, grain) is drawn identically on every page before the first frame and never moves, so only the tree and the page travel and the midpoint is calm, empty paper.
-
-Skipped for contact (email), modifier-clicks (new tab) and reduced motion. The browser's back button restores a clean tree.
+- **One motion, no pause:** the browser runs it as a single animation across the page change (a cross-document view transition). It loads the new page while the old one is still showing, then plays both halves back to back, so there's no stop in the middle where the page loads.
+- **Easing:** one continuous ease-in-out over 1.3s. The first half eases in gently (ease-in sine), the second starts at exactly the speed the first ended at and eases out (ease-out sine).
+- **What moves:** the tree as one piece, and the on-screen slice of the page as another, each exactly one screen. The sky (paper, glows, streaks, grain) is identical on every page and stays put. The tree's name, path and item count fade out as it leaves and back in as it settles.
+- Firefox doesn't support cross-document view transitions yet; there pages just open. Reduced motion: no pan.
 
 (Tried first and dropped: the canopy swelling to fill the screen, after sasha birukoff's "fluid illumination".)

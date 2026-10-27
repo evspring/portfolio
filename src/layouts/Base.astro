@@ -30,21 +30,17 @@ const {
     <meta name="description" content={description} />
     <meta name="theme-color" content="#f7f0ea" />
     <script is:inline>document.documentElement.classList.add('js')</script>
-    <!--
-      The pan between the tree and a page. Set up before the first frame: a page we're panning
-      up into starts above the screen; the tree we're returning to starts hidden below.
-    -->
+    <!-- hold the first paint until the piece that pans in has been read in, so the pan can carry it -->
+    <link rel="expect" href={bare ? '#tree-data' : '#doc-end'} blocking="render" />
+    <!-- tell the next page how far down this one was scrolled, so the pan carries the right slice -->
     <script is:inline>
-      (function () {
-        try {
-          var d = JSON.parse(sessionStorage.getItem('tree-pan') || 'null');
-          if (!d || Date.now() - d.at > 4000 || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-          var here = location.pathname;
-          if (d.way === 'in' && d.href === here) document.documentElement.classList.add('pan-arrive');
-          if (d.way === 'out' && here === '/') document.documentElement.classList.add('pan-return');
-        } catch (e) {}
-      })();
+      addEventListener('pageswap', function () { try { sessionStorage.setItem('vt-scroll', String(scrollY)); } catch (e) {} });
+      addEventListener('pagereveal', function (e) {
+        if (!e.viewTransition) return;
+        try { document.documentElement.style.setProperty('--vt-scroll', (sessionStorage.getItem('vt-scroll') || 0) + 'px'); } catch (err) {}
+      });
     </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -63,34 +59,7 @@ const {
           <a href={back} class="text-sm text-quiet no-underline hover:text-ink" data-back>Back to the tree</a>
         </header>
 
-        <!--
-          The pan, page side. Arriving from the tree, the page slides down into place (see
-          global.css). "Back to the tree" lifts the page away upward, then the tree rises into view.
-        -->
-        <script is:inline>
-          (function () {
-            var root = document.documentElement, KEY = 'tree-pan';
-            var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-            try { sessionStorage.removeItem(KEY); } catch (e) {}
-            var content = document.currentScript.closest('.pan-content');
-            if (root.classList.contains('pan-arrive')) {
-              var done = function () { root.classList.remove('pan-arrive'); };
-              content.addEventListener('animationend', done, { once: true });
-              setTimeout(done, 1200);
-            }
-            document.addEventListener('click', function (e) {
-              var a = e.target.closest && e.target.closest('[data-back]');
-              if (!a || reduced || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-              e.preventDefault();
-              try { sessionStorage.setItem(KEY, JSON.stringify({ way: 'out', href: location.pathname, at: Date.now() })); } catch (err) {}
-              root.classList.add('pan-leave');
-              content.addEventListener('animationend', function () { location.href = a.href; }, { once: true });
-            });
-            addEventListener('pageshow', function (e) {
-              if (e.persisted) root.classList.remove('pan-arrive', 'pan-leave');
-            });
-          })();
-        </script>
+
 
         <main class="mx-auto max-w-[68rem] px-5 sm:px-8">
           <slot />
@@ -100,6 +69,7 @@ const {
           <span>© {new Date().getFullYear()} Evan Springer</span>
           <a href={`mailto:${EMAIL}`} class="no-underline hover:text-ink">{EMAIL}</a>
         </footer>
+        <span id="doc-end" hidden></span>
       </div>
     )}
   </body>

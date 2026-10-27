@@ -215,3 +215,10 @@ What changed:
 - Photo spaces: a portrait beside the intro (below it on phones) and a row of three under the interests section, all quiet paper-toned blocks until photos arrive. To add them: put files in `public/about/` and fill in `src`/`alt` at the top of `src/pages/about.astro` (`PhotoSlot` component).
 - New Contact page: one line, then the email address large. The tree's Contact now opens it (with the pan) instead of an email.
 - About ends with a quiet "Get in touch" link to Contact.
+
+**#21, Evan**
+> For both of these pages make the background paper a more solid color. Remove the streaks and color changes.
+
+What changed:
+- About and Contact now sit on plain paper: one solid `#F7F0EA`, no glows or streaks, with a much fainter grain (so it still reads as paper). `<Base plain>` turns this on for any page; the tree and case studies keep the full sky.
+- In the pan, the new page's background now fades in slowly over the whole move, so going from the tree's glowing sky to plain paper (and back) is gradual, not a jump.

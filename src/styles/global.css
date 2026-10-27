@@ -99,8 +99,10 @@
 @view-transition { navigation: auto; }
 .pan-content { view-transition-name: doc; }
 ::view-transition-group(tree), ::view-transition-group(doc) { animation: none; }
-/* the sky is the same on both sides and stays put */
-::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+/* the sky stays put; where two pages' skies differ (the tree's glows vs a plain page),
+   the new one fades in slowly across the whole pan */
+::view-transition-old(root) { animation: none; }
+::view-transition-new(root) { animation: 1.3s ease-in-out both pan-fade-in; }
 /* the tree's name, path and item count fade out as it leaves and back in as it settles */
 ::view-transition-group(tree-head), ::view-transition-group(tree-count) { animation: none; }
 ::view-transition-old(tree-head), ::view-transition-old(tree-count) { animation: 0.3s ease both pan-fade-out; }

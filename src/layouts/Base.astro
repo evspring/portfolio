@@ -11,6 +11,8 @@ interface Props {
   bare?: boolean;
   /** Where "Back" returns to: the tree, opened to this page's folder. */
   back?: string;
+  /** Plain, solid paper behind the page (no glows or streaks). */
+  plain?: boolean;
 }
 
 const {
@@ -18,6 +20,7 @@ const {
   description = 'Evan Springer is a product designer who helps teams shape and build apps and products.',
   bare = false,
   back = '/',
+  plain = false,
 } = Astro.props;
 ---
 
@@ -49,7 +52,7 @@ const {
     />
   </head>
   <body class="min-h-screen">
-    <PaperSky />
+    <PaperSky plain={plain} />
     {bare ? (
       <slot />
     ) : (

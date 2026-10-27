@@ -1,9 +1,11 @@
 ---
 /*
   The home page: the site as a literal file tree, after Finn Taylor's
-  "Literal file tree". It starts as a planted terracotta pot; clicking the pot
-  grows a sapling. Folders grow branches, files open pages, and every new
-  folder or page someone explores ages the tree, from sapling to mature.
+  "Literal file tree", shaped like a family tree. It starts as a planted
+  terracotta pot; clicking the pot grows a sapling that forks. Every item in a
+  folder gets its own limb fanning out from that fork: folders climb up the
+  middle, pages spread to the sides on the same level. Files open pages, and
+  every new folder or page someone explores ages the tree, sapling to mature.
 
   Motion measured from the reference video (DESIGN-BRIEF.md, "The tree"):
   - a branch grows in ~0.85s, fast then slowing; moss fills in just behind the tip
@@ -92,6 +94,7 @@ import { tree } from '../data/tree';
   .tnode.label-below .label { top: 19px; }
   .tnode.label-above .label { top: -7px; }
   .tnode.flip { flex-direction: row-reverse; translate: -100% 0; }
+  .tnode.label-over .label { position: absolute; left: 16px; top: -15px; translate: -50% 0; }
   .tnode .open-icon { display: none; }
   .tnode[aria-expanded='true'] .open-icon { display: block; }
   .tnode[aria-expanded='true'] .closed-icon { display: none; }
@@ -100,21 +103,30 @@ import { tree } from '../data/tree';
 <script>
   type TreeNode = { name: string; kind: 'folder' | 'file'; href?: string; children?: TreeNode[] };
   type Pt = { x: number; y: number; tx: number; ty: number };
+  type Box = { x0: number; x1: number; y0: number; y1: number };
   // need: how mature the tree must be (0..1) before this pixel shows
   type Pix = { gx: number; gy: number; s: number; thr: number; moss: boolean; need: number };
-  type Branch = {
-    folder: TreeNode;
+  type Kind = 'trunk' | 'folder' | 'file';
+  // One limb per item, like a family tree: each folder is a fork, and everything in it
+  // gets its own limb fanning out from that fork.
+  type Limb = {
+    node: TreeNode;
+    kind: Kind;
     depth: number;
     key: string;
-    anchor: { x: number; y: number };
+    parent: Limb | null;
     angle: number;
     len: number;
+    w: [number, number];
     samples: { x: number; y: number; s: number }[];
+    tip: Pt;
     buckets: Map<string, Pix[]>;
-    nodes: { el: HTMLElement; s: number; node: TreeNode; x: number; y: number; angle: number }[];
+    el: HTMLElement | null;
+    box: Box | null;
+    kids: Limb[];
     grow: Tween;
     moss: Tween;
-    closing: boolean;
+    dying: boolean;
   };
 
   const root = document.querySelector<HTMLElement>('[data-tree]')!;
@@ -125,16 +137,11 @@ import { tree } from '../data/tree';
   const countEl = document.querySelector<HTMLElement>('[data-count]')!;
   const data: TreeNode = JSON.parse(document.getElementById('tree-data')!.textContent!);
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const coarse = matchMedia('(pointer: coarse)').matches;
 
   const G = 3; // size of one tree pixel, in CSS px
-  let W = 0, H = 0, S = 1;
-  // The trunk rises out of the pot. Wide screens let it lean right, where there's room to grow.
-  let portrait = false;
-  const trunkAngle = () => (portrait ? -1.25 : -1.0);
-  // How much each new branch turns from the spot it grows from. Alternates so the tree zigzags.
-  const turnFor = (depth: number) =>
-    portrait ? (depth % 2 === 0 ? 0.8 : -0.6) : (depth % 2 === 0 ? 1.05 : -0.7);
-  const coarse = matchMedia('(pointer: coarse)').matches;
+  const UP = -Math.PI / 2;
+  let W = 0, H = 0, S = 1, narrow = false;
 
   /* ---------- small helpers ---------- */
   const easeOut = (u: number) => 1 - Math.pow(1 - u, 3);
@@ -145,14 +152,15 @@ import { tree } from '../data/tree';
   class Tween {
     v: number; from: number; to: number; t0 = 0; dur = 0; ease = easeOut;
     constructor(v: number) { this.v = this.from = this.to = v; }
-    go(to: number, seconds: number, ease = easeOut) {
-      this.from = this.v; this.to = to; this.t0 = performance.now();
+    go(to: number, seconds: number, ease = easeOut, delay = 0) {
+      this.from = this.v; this.to = to; this.t0 = performance.now() + (reduced ? 0 : delay * 1000);
       this.dur = reduced ? 0 : seconds * 1000; this.ease = ease;
       wake();
     }
     set(v: number) { this.v = this.from = this.to = v; }
     tick(now: number) {
       if (this.v === this.to) return false;
+      if (now < this.t0) return true; // waiting out a delay
       const u = this.dur ? Math.min(1, (now - this.t0) / this.dur) : 1;
       this.v = u >= 1 ? this.to : this.from + (this.to - this.from) * this.ease(u);
       return true;
@@ -188,6 +196,9 @@ import { tree } from '../data/tree';
     for (const [c, w] of MOSS) { acc += w; if (r < acc) return c; }
     return MOSS[0][0];
   };
+  const YOUNG = [C('moss-bright'), C('moss-lime'), C('moss-pale')];
+  const pickYoung = (r: number) => YOUNG[Math.floor(r * YOUNG.length)];
+  const leafFor = (need: number, r: number, r2: number) => (need < 0.35 ? pickYoung(r) : pickMoss(r2));
 
   /* ---------- icons ---------- */
   const ICON = {
@@ -195,251 +206,6 @@ import { tree } from '../data/tree';
     open: '<svg class="open-icon" viewBox="0 0 16 16"><path d="M1.6 12.4V3.6a1 1 0 0 1 1-1h3.5l1.4 1.5h4.9a1 1 0 0 1 1 1v1.4"/><path d="M1.6 12.4l2.1-5.3h11l-2.1 5.3z"/></svg>',
     file: '<svg viewBox="0 0 16 16"><path d="M3.6 1.6h5.9l2.9 2.9v9.9H3.6z"/><path d="M9.5 1.6v2.9h2.9M5.8 8h4.4M5.8 10.4h4.4"/></svg>',
   };
-
-  /* ---------- geometry ---------- */
-  function makeBranch(folder: TreeNode, depth: number, key: string, anchor: { x: number; y: number }, angle: number): Branch {
-    const rnd = rngFrom(hash(key));
-    const n = folder.children?.length ?? 0;
-    // a young tree is shorter; it reaches its full height as it matures
-    const len = depth === 0
-      ? Math.min(H * lerp(0.44, 0.6, layoutAge), 580)
-      : (170 + 105 * n) * S * lerp(0.86, 1.04, layoutAge);
-    // the trunk leaves the soil straight up, then leans; branches curve gently
-    const bend = depth === 0 ? -Math.PI / 2 - angle : 0.16 + rnd() * 0.18;
-    const dir = (a: number) => ({ x: Math.cos(a), y: Math.sin(a) });
-    const P0 = anchor;
-    const P3 = { x: P0.x + len * Math.cos(angle), y: P0.y + len * Math.sin(angle) };
-    const d1 = dir(angle + bend);
-    const P1 = { x: P0.x + len * 0.38 * d1.x, y: P0.y + len * 0.38 * d1.y };
-    const P2 = { x: P3.x - len * 0.38 * d1.x, y: P3.y - len * 0.38 * d1.y };
-
-    // the S-curve, then a gentle wave across it so limbs look grown, not drawn
-    const N = 300;
-    const base = Array.from({ length: N + 1 }, (_, i) => {
-      const t = i / N, m = 1 - t;
-      return {
-        x: m * m * m * P0.x + 3 * m * m * t * P1.x + 3 * m * t * t * P2.x + t * t * t * P3.x,
-        y: m * m * m * P0.y + 3 * m * m * t * P1.y + 3 * m * t * t * P2.y + t * t * t * P3.y,
-      };
-    });
-    const amp = clamp(len * 0.03, 5, 18), freq = 1.4 + rnd() * 1.2, phase = rnd() * Math.PI * 2;
-    const samples: { x: number; y: number; s: number }[] = [];
-    let s = 0;
-    base.forEach((p, i) => {
-      const a = base[Math.max(0, i - 1)], c = base[Math.min(N, i + 1)];
-      const dl = Math.hypot(c.x - a.x, c.y - a.y) || 1;
-      const t = i / N;
-      const off = Math.sin(t * Math.PI * freq + phase) * amp * Math.pow(Math.sin(Math.PI * t), 0.7);
-      const x = p.x - ((c.y - a.y) / dl) * off, y = p.y + ((c.x - a.x) / dl) * off;
-      if (samples.length) { const q = samples[samples.length - 1]; s += Math.hypot(x - q.x, y - q.y); }
-      samples.push({ x, y, s });
-    });
-    const L = s;
-    const b: Branch = {
-      folder, depth, key, anchor, angle, len: L, samples,
-      buckets: new Map(), nodes: [], grow: new Tween(0), moss: new Tween(1), closing: false,
-    };
-    buildPixels(b, rnd);
-    return b;
-  }
-
-  function at(b: Branch, s: number): Pt {
-    const sm = b.samples;
-    let lo = 0, hi = sm.length - 1;
-    while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (sm[mid].s < s) lo = mid; else hi = mid; }
-    const a = sm[lo], c = sm[hi];
-    const u = c.s === a.s ? 0 : clamp((s - a.s) / (c.s - a.s), 0, 1);
-    const dx = c.x - a.x, dy = c.y - a.y, dl = Math.hypot(dx, dy) || 1;
-    return { x: lerp(a.x, c.x, u), y: lerp(a.y, c.y, u), tx: dx / dl, ty: dy / dl };
-  }
-
-  /* ---------- pixels: bark core, moss clumps, twigs, leafy tips ---------- */
-  // Every branch is generated at full maturity. Each pixel carries the maturity it
-  // needs to appear, so the same tree can be drawn as a sapling or an old mossy one,
-  // and can grow between the two in front of you.
-  const YOUNG = [C('moss-bright'), C('moss-lime'), C('moss-pale')];
-  const pickYoung = (r: number) => YOUNG[Math.floor(r * YOUNG.length)];
-  const leafFor = (need: number, r: number, r2: number) => (need < 0.35 ? pickYoung(r) : pickMoss(r2));
-
-  function buildPixels(b: Branch, rnd: () => number) {
-    const cells = new Map<string, { color: string; p: Pix }>();
-    const put = (x: number, y: number, color: string, s: number, moss: boolean, thr: number, need: number) => {
-      const gx = Math.round(x / G), gy = Math.round(y / G), k = gx + ',' + gy;
-      const had = cells.get(k);
-      if (had) {
-        if (!had.p.moss && moss) return; // bark wins over moss
-        if (had.p.moss === moss && had.p.need <= need) return; // the earlier-appearing pixel wins
-      }
-      cells.set(k, { color, p: { gx, gy, s, thr, moss, need } });
-    };
-
-    const k = lerp(0.72, 1, (S - 0.62) / 0.38);
-    // full-grown widths; a sapling shows about a third of this
-    const [w0, w1] = (b.depth === 0 ? [22, 6] : b.depth === 1 ? [14, 4.5] : [10, 3]).map((v) => v * k);
-    const thin = 0.24; // fraction of full width a sapling has
-    const widthAt = (need: number) => lerp(thin, 1, need);
-    const clumps = Array.from({ length: Math.ceil(b.len / 38) + 2 }, () => rnd());
-    const clump = (s: number) => {
-      const i = Math.floor(s / 38), f = s / 38 - i, u = f * f * (3 - 2 * f);
-      return lerp(clumps[i], clumps[i + 1], u);
-    };
-
-    for (let s = 0; s <= b.len; s += 1.5) {
-      const t = s / b.len;
-      const p = at(b, s);
-      const nx = -p.ty, ny = p.tx; // normal; for a branch heading right this points down
-      // the trunk flares where it meets the soil once it's old
-      const flare = b.depth === 0 ? 14 * k * Math.pow(Math.max(0, 1 - t / 0.08), 2) : 0;
-      const w = lerp(w0, w1, t) + flare;
-
-      // bark: dark underside, light top edge, grey middle, the odd red speck
-      for (let kk = -w / 2; kk <= w / 2; kk += 1.4) {
-        const need = clamp((Math.abs(kk) * 2 / w - thin) / (1 - thin), 0, 1);
-        const r = rnd();
-        let c = r < 0.55 ? BARK.mid : r < 0.8 ? BARK.light : BARK.dark;
-        if (kk > 0 && rnd() < 0.25 + 0.6 * (kk / (w / 2))) c = BARK.dark;
-        if (rnd() < 0.008) c = BARK.speck;
-        put(p.x + nx * kk, p.y + ny * kk, c, s, false, 0, need);
-      }
-
-      // moss: clumps that sit mostly on top, thinning toward the tip. Old trees carry far more.
-      const m = clamp((clump(s) - 0.24) / 0.5, 0, 1);
-      const count = Math.floor(m * 10 * (1 - t * 0.5) + rnd() * 1.6);
-      const R = lerp(w0 * 1.6 + 8, 4, t);
-      for (let i = 0; i < count; i++) {
-        const need = clamp(Math.pow(rnd(), 0.85) * 1.12 - 0.1, 0, 1);
-        const side = rnd() < 0.74 ? -1 : 1;
-        // sits on the bark as wide as the bark is when this pixel appears
-        const off = side * ((w / 2) * widthAt(need) - 1 + Math.pow(rnd(), 1.15) * R * lerp(0.45, 1, need));
-        const along = (rnd() - 0.5) * 5;
-        put(p.x + nx * off + p.tx * along, p.y + ny * off + p.ty * along,
-          leafFor(need, rnd(), rnd()), s + 8 + rnd() * 42, true, rnd(), need);
-      }
-
-      // foliage: leafy clumps along the top of older limbs
-      if (t > 0.18 && rnd() < 0.022) {
-        const need = 0.45 + rnd() * 0.55;
-        const rr = (7 + rnd() * 9) * k;
-        const cxl = p.x - nx * (w / 2 + rr * 0.7), cyl = p.y - ny * (w / 2 + rr * 0.7);
-        for (let q = 0; q < rr * rr * 0.9; q++) {
-          const a = rnd() * Math.PI * 2, r = Math.sqrt(rnd()) * rr;
-          put(cxl + Math.cos(a) * r, cyl + Math.sin(a) * r * 0.8, pickMoss(rnd()), s + 20 + r, true, rnd(),
-            Math.min(1, need + (r / rr) * 0.2));
-        }
-      }
-
-      // twigs: thin single-pixel offshoots that come with age
-      if (t > 0.08 && t < 0.9 && rnd() < 0.03) {
-        const need = 0.25 + rnd() * 0.75;
-        const up = rnd() < 0.65 ? -1 : 1;
-        const a = Math.atan2(p.ty, p.tx) + up * (0.5 + rnd() * 0.6);
-        const tl = (10 + rnd() * 26) * S;
-        for (let j = 0; j < tl; j += 2) {
-          if (rnd() < 0.85) put(p.x + Math.cos(a) * j, p.y + Math.sin(a) * j, BARK.light, s + j, false, 0, need);
-        }
-        for (let q = 0; q < 5; q++)
-          put(p.x + Math.cos(a) * tl + (rnd() - 0.5) * 8, p.y + Math.sin(a) * tl + (rnd() - 0.5) * 8,
-            pickMoss(rnd()), s + tl + 20, true, rnd() * 0.8, Math.min(1, need + 0.1));
-      }
-    }
-
-    // a leafy tuft at the tip: a few fresh leaves on a sapling, a full crown when old
-    const tip = at(b, b.len);
-    const Rt = (b.depth === 0 ? 40 : 30) * k;
-    for (let i = 0; i < Rt * Rt * 0.55; i++) {
-      const a = rnd() * Math.PI * 2, r = Math.pow(rnd(), 0.7) * Rt;
-      const need = clamp((r / Rt) * 0.95 - 0.12 + rnd() * 0.12, 0, 1);
-      put(tip.x + Math.cos(a) * r - tip.ty * 3, tip.y + Math.sin(a) * r * 0.8 - Math.abs(tip.tx) * 4,
-        leafFor(need, rnd(), rnd()), b.len * (1 - 0.02 * (1 - r / Rt)), true, rnd() * 0.9, need);
-    }
-
-    for (const { color, p } of cells.values()) {
-      if (!b.buckets.has(color)) b.buckets.set(color, []);
-      b.buckets.get(color)!.push(p);
-    }
-  }
-
-  /* ---------- nodes along a branch ---------- */
-  // Does a label box at (x0..x1, y0..y1) sit on any visible branch, or on a label already placed?
-  const placed: { x0: number; x1: number; y0: number; y1: number }[] = [];
-  function blocked(x0: number, x1: number, y0: number, y1: number, extra: Branch) {
-    for (const r of placed) if (x0 < r.x1 && x1 > r.x0 && y0 < r.y1 && y1 > r.y0) return true;
-    for (const br of [...open, extra]) {
-      const sm = br.samples;
-      for (let i = 0; i < sm.length; i += 2) {
-        const p = sm[i];
-        if (p.x > x0 - 5 && p.x < x1 + 5 && p.y > y0 - 6 && p.y < y1 + 6) return true;
-      }
-    }
-    return false;
-  }
-
-  function placeNodes(b: Branch) {
-    // Files first, folders at the tip, so new growth heads outward instead of back across the tree.
-    const kids = [...(b.folder.children ?? [])].sort((a, c) =>
-      a.kind === c.kind ? 0 : a.kind === 'folder' ? 1 : -1);
-    const n = kids.length;
-    let fileSide = b.depth % 2 ? 1 : -1;
-    if (b.depth === 0) placed.length = 0;
-    kids.forEach((node, i) => {
-      const t = n === 1 ? 0.62 : lerp(0.36, 0.93, i / (n - 1));
-      const s = t * b.len;
-      const p = at(b, s);
-      let x = p.x, y = p.y, flip = false;
-      const isFolder = node.kind === 'folder';
-      const el = document.createElement(isFolder ? 'button' : 'a');
-      el.className = 'tnode';
-      const lw = (node.name.length + (isFolder ? 1 : 0)) * 6.7 + 4;
-      if (!isFolder) {
-        // Try each side of the branch, label right then left, and take the first spot that's clear.
-        const tries: [number, boolean][] = [[fileSide, false], [fileSide, true], [-fileSide, false], [-fileSide, true]];
-        let pick = tries[0], box = { x0: 0, x1: 0, y0: 0, y1: 0 };
-        for (const tr of tries) {
-          const fx = p.x - p.ty * 24 * tr[0], fy = p.y + p.tx * 24 * tr[0];
-          const bx = tr[1] ? { x0: fx - 14 - lw, x1: fx + 8 } : { x0: fx - 8, x1: fx + 14 + lw };
-          box = { ...bx, y0: fy - 8, y1: fy + 8 };
-          if (!blocked(box.x0, box.x1, box.y0, box.y1, b)) { pick = tr; break; }
-          pick = tries[0];
-        }
-        x = p.x - p.ty * 24 * pick[0]; y = p.y + p.tx * 24 * pick[0]; flip = pick[1];
-        fileSide = -pick[0];
-        placed.push(flip ? { x0: x - 14 - lw, x1: x + 8, y0: y - 8, y1: y + 8 } : { x0: x - 8, x1: x + 14 + lw, y0: y - 8, y1: y + 8 });
-        (el as any)._box = placed[placed.length - 1];
-      } else {
-        // keep the folder's label clear of the branch it will grow, and of anything else
-        const childAngle = Math.atan2(p.ty, p.tx) + turnFor(b.depth);
-        const below = { x0: x + 18, x1: x + 22 + lw, y0: y + 9, y1: y + 23 };
-        const above = { x0: x + 18, x1: x + 22 + lw, y0: y - 17, y1: y - 3 };
-        let useBelow = childAngle < -0.2;
-        const pref = useBelow ? below : above, alt = useBelow ? above : below;
-        if (blocked(pref.x0, pref.x1, pref.y0, pref.y1, b) && !blocked(alt.x0, alt.x1, alt.y0, alt.y1, b)) useBelow = !useBelow;
-        el.classList.add(useBelow ? 'label-below' : 'label-above');
-        placed.push(useBelow ? below : above);
-        (el as any)._box = placed[placed.length - 1];
-      }
-      if (flip) el.classList.add('flip');
-      el.innerHTML = (isFolder ? ICON.closed + ICON.open : ICON.file) + `<span class="label">${node.name}${isFolder ? '/' : ''}</span>`;
-      el.style.left = `${Math.round(flip ? x + 24 : x - 8)}px`;
-      el.style.top = `${Math.round(y - 8)}px`;
-      el.tabIndex = -1;
-      if (isFolder) {
-        el.setAttribute('type', 'button');
-        el.setAttribute('aria-expanded', 'false');
-        el.addEventListener('click', () => toggle(b, node));
-      } else {
-        (el as HTMLAnchorElement).href = node.href!;
-        el.addEventListener('click', () => explore(node.href!)); // the tree grows when you come back
-      }
-      world.appendChild(el);
-      b.nodes.push({ el, s, node, x: p.x, y: p.y, angle: Math.atan2(p.ty, p.tx) });
-    });
-  }
-
-  /* ---------- state ---------- */
-  const open: Branch[] = []; // trunk first, deepest last
-  const dying: Branch[] = [];
-  const cam = { x: new Tween(0), y: new Tween(0) };
-  let planted = false;
 
   /* ---------- maturity: the tree ages as people explore ---------- */
   // Places to explore: every folder and every page. Kept in this browser only.
@@ -459,7 +225,7 @@ import { tree } from '../data/tree';
   };
   const maturityOf = (seen: string[]) => places.filter((p) => seen.includes(p)).length / places.length;
   const mat = new Tween(maturityOf(readStore().seen ?? [])); // the age being drawn, animated
-  let layoutAge = mat.v; // the age new branches are laid out for (their length)
+  let layoutAge = mat.v; // the age new limbs are laid out for (their length)
 
   // Record a new place; if it's new, the tree grows toward its new age.
   function explore(place: string, grow = false) {
@@ -472,86 +238,358 @@ import { tree } from '../data/tree';
     if (grow) { layoutAge = target; mat.go(target, 1.4); }
   }
 
-  function childBranch(parent: Branch, node: TreeNode) {
-    const spot = parent.nodes.find((n) => n.node === node)!;
-    return makeBranch(node, parent.depth + 1, parent.key + '/' + node.name, { x: spot.x, y: spot.y }, spot.angle + turnFor(parent.depth));
+  /* ---------- sizes ---------- */
+  const k = () => lerp(0.72, 1, (S - 0.62) / 0.38);
+  const ageLen = () => lerp(0.86, 1.04, layoutAge);
+  function sizeFor(kind: Kind, depth: number, center: boolean): { len: number; w: [number, number] } {
+    const kk = k();
+    if (kind === 'trunk')
+      return { len: clamp(H * lerp(0.26, 0.36, layoutAge), 150, 330), w: [22 * kk, 9 * kk] };
+    if (kind === 'folder')
+      return { len: clamp(H * 0.19, 120, 185) * ageLen(), w: (depth === 1 ? [12, 5] : [9, 3.6]).map((v) => v * kk) as [number, number] };
+    // pages on the sides reach far out, so each level spreads wide like a family tree
+    const base = narrow ? (center ? 96 : 118) : (center ? 140 : 215);
+    return {
+      len: base * ageLen(),
+      w: (depth === 1 ? [8, 2.6] : depth === 2 ? [6.5, 2.2] : [5.5, 2]).map((v) => v * kk) as [number, number],
+    };
   }
 
-  function growTime(b: Branch) { return 0.5 + b.len / 1600; }
+  /* ---------- geometry ---------- */
+  function makeLimb(node: TreeNode, kind: Kind, depth: number, key: string, parent: Limb | null,
+                    anchor: { x: number; y: number }, angle: number, center: boolean): Limb {
+    const rnd = rngFrom(hash(key));
+    const { len, w } = sizeFor(kind, depth, center);
+    const dir = (a: number) => ({ x: Math.cos(a), y: Math.sin(a) });
+    // Limbs that lean out to the side leave flatter and curl upward, like real branches.
+    // Limbs that grow up the middle get a gentle S.
+    const side = Math.abs(Math.cos(angle)) > 0.25;
+    const b1 = side ? Math.sign(Math.cos(angle)) * 0.34 : (rnd() - 0.5) * 0.3;
+    const b2 = side ? -b1 : b1;
+    const P0 = anchor;
+    const P3 = { x: P0.x + len * Math.cos(angle), y: P0.y + len * Math.sin(angle) };
+    const d1 = dir(angle + b1), d2 = dir(angle + b2);
+    const P1 = { x: P0.x + len * 0.38 * d1.x, y: P0.y + len * 0.38 * d1.y };
+    const P2 = { x: P3.x - len * 0.38 * d2.x, y: P3.y - len * 0.38 * d2.y };
 
-  function openFolder(parent: Branch, node: TreeNode, instant = false) {
-    if (!instant) explore(`${parent.key.replace(/^evan/, '')}/${node.name}/`, true);
-    closeBelow(open.indexOf(parent));
-    const b = childBranch(parent, node);
-    placeNodes(b);
-    open.push(b);
-    instant ? b.grow.set(1) : b.grow.go(1, growTime(b));
-    setExpanded(parent, node, true);
+    // the curve, then a gentle wave across it so limbs look grown, not drawn
+    const N = 220;
+    const base = Array.from({ length: N + 1 }, (_, i) => {
+      const t = i / N, m = 1 - t;
+      return {
+        x: m * m * m * P0.x + 3 * m * m * t * P1.x + 3 * m * t * t * P2.x + t * t * t * P3.x,
+        y: m * m * m * P0.y + 3 * m * m * t * P1.y + 3 * m * t * t * P2.y + t * t * t * P3.y,
+      };
+    });
+    const amp = clamp(len * 0.03, 2.5, 14), freq = 1.4 + rnd() * 1.2, phase = rnd() * Math.PI * 2;
+    const samples: { x: number; y: number; s: number }[] = [];
+    let s = 0;
+    base.forEach((p, i) => {
+      const a = base[Math.max(0, i - 1)], c = base[Math.min(N, i + 1)];
+      const dl = Math.hypot(c.x - a.x, c.y - a.y) || 1;
+      const t = i / N;
+      const off = Math.sin(t * Math.PI * freq + phase) * amp * Math.pow(Math.sin(Math.PI * t), 0.7);
+      const x = p.x - ((c.y - a.y) / dl) * off, y = p.y + ((c.x - a.x) / dl) * off;
+      if (samples.length) { const q = samples[samples.length - 1]; s += Math.hypot(x - q.x, y - q.y); }
+      samples.push({ x, y, s });
+    });
+    const limb: Limb = {
+      node, kind, depth, key, parent, angle, len: s, w, samples, tip: { x: 0, y: 0, tx: 0, ty: -1 },
+      buckets: new Map(), el: null, box: null, kids: [],
+      grow: new Tween(0), moss: new Tween(1), dying: false,
+    };
+    limb.tip = at(limb, limb.len);
+    buildPixels(limb, rnd);
+    return limb;
+  }
+
+  function at(b: Limb, s: number): Pt {
+    const sm = b.samples;
+    let lo = 0, hi = sm.length - 1;
+    while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (sm[mid].s < s) lo = mid; else hi = mid; }
+    const a = sm[lo], c = sm[hi];
+    const u = c.s === a.s ? 0 : clamp((s - a.s) / (c.s - a.s), 0, 1);
+    const dx = c.x - a.x, dy = c.y - a.y, dl = Math.hypot(dx, dy) || 1;
+    return { x: lerp(a.x, c.x, u), y: lerp(a.y, c.y, u), tx: dx / dl, ty: dy / dl };
+  }
+
+  /* ---------- pixels: bark core, moss clumps, twigs, leafy tips ---------- */
+  // Every limb is generated at full maturity. Each pixel carries the maturity it
+  // needs to appear, so the same tree can be drawn as a sapling or an old mossy one,
+  // and can grow between the two in front of you.
+  function buildPixels(b: Limb, rnd: () => number) {
+    const cells = new Map<string, { color: string; p: Pix }>();
+    const put = (x: number, y: number, color: string, s: number, moss: boolean, thr: number, need: number) => {
+      const gx = Math.round(x / G), gy = Math.round(y / G), key = gx + ',' + gy;
+      const had = cells.get(key);
+      if (had) {
+        if (!had.p.moss && moss) return; // bark wins over moss
+        if (had.p.moss === moss && had.p.need <= need) return; // the earlier-appearing pixel wins
+      }
+      cells.set(key, { color, p: { gx, gy, s, thr, moss, need } });
+    };
+
+    const kk = k();
+    const [w0, w1] = b.w;
+    const thin = 0.24; // fraction of full width a sapling has
+    const widthAt = (need: number) => lerp(thin, 1, need);
+    const clumps = Array.from({ length: Math.ceil(b.len / 38) + 2 }, () => rnd());
+    const clump = (s: number) => {
+      const i = Math.floor(s / 38), f = s / 38 - i, u = f * f * (3 - 2 * f);
+      return lerp(clumps[i], clumps[i + 1], u);
+    };
+
+    for (let s = 0; s <= b.len; s += 1.5) {
+      const t = s / b.len;
+      const p = at(b, s);
+      const nx = -p.ty, ny = p.tx; // normal
+      // the trunk flares where it meets the soil once it's old
+      const flare = b.kind === 'trunk' ? 14 * kk * Math.pow(Math.max(0, 1 - t / 0.1), 2) : 0;
+      const w = lerp(w0, w1, t) + flare;
+
+      // bark: dark on the shaded side, light edge, grey middle, the odd red speck
+      const shadeSide = nx > 0 ? 1 : -1; // the side facing right/down sits in shadow
+      for (let kx = -w / 2; kx <= w / 2; kx += 1.4) {
+        const need = clamp((Math.abs(kx) * 2 / w - thin) / (1 - thin), 0, 1);
+        const r = rnd();
+        let c = r < 0.55 ? BARK.mid : r < 0.8 ? BARK.light : BARK.dark;
+        if (kx * shadeSide > 0 && rnd() < 0.25 + 0.6 * (Math.abs(kx) / (w / 2))) c = BARK.dark;
+        if (rnd() < 0.008) c = BARK.speck;
+        put(p.x + nx * kx, p.y + ny * kx, c, s, false, 0, need);
+      }
+
+      // moss: clumps that sit mostly on the upper side, thinning toward the tip. Old trees carry far more.
+      const up = ny < 0 ? 1 : -1; // which normal direction points up the screen
+      const m = clamp((clump(s) - 0.24) / 0.5, 0, 1);
+      const count = Math.floor(m * 9 * (1 - t * 0.5) * (w0 / 14 + 0.4) + rnd() * 1.4);
+      const R = lerp(w0 * 1.6 + 8, 4, t);
+      for (let i = 0; i < count; i++) {
+        const need = clamp(Math.pow(rnd(), 0.85) * 1.12 - 0.1, 0, 1);
+        const sgn = rnd() < 0.72 ? up : -up;
+        const off = sgn * ((w / 2) * widthAt(need) - 1 + Math.pow(rnd(), 1.15) * R * lerp(0.45, 1, need));
+        const along = (rnd() - 0.5) * 5;
+        put(p.x + nx * off + p.tx * along, p.y + ny * off + p.ty * along,
+          leafFor(need, rnd(), rnd()), s + 8 + rnd() * 42, true, rnd(), need);
+      }
+
+      // foliage: leafy clumps along older limbs
+      if (b.kind !== 'trunk' && t > 0.2 && rnd() < 0.02) {
+        const need = 0.45 + rnd() * 0.55;
+        const rr = (6 + rnd() * 8) * kk;
+        const cxl = p.x + nx * up * (w / 2 + rr * 0.7), cyl = p.y + ny * up * (w / 2 + rr * 0.7);
+        for (let q = 0; q < rr * rr * 0.9; q++) {
+          const a = rnd() * Math.PI * 2, r = Math.sqrt(rnd()) * rr;
+          put(cxl + Math.cos(a) * r, cyl + Math.sin(a) * r * 0.8, pickMoss(rnd()), s + 20 + r, true, rnd(),
+            Math.min(1, need + (r / rr) * 0.2));
+        }
+      }
+
+      // twigs: thin single-pixel offshoots that come with age
+      if (t > 0.1 && t < 0.88 && rnd() < 0.026) {
+        const need = 0.25 + rnd() * 0.75;
+        const a = Math.atan2(p.ty, p.tx) + (rnd() < 0.5 ? -1 : 1) * (0.5 + rnd() * 0.6);
+        const tl = (8 + rnd() * 20) * S;
+        for (let j = 0; j < tl; j += 2) {
+          if (rnd() < 0.85) put(p.x + Math.cos(a) * j, p.y + Math.sin(a) * j, BARK.light, s + j, false, 0, need);
+        }
+        for (let q = 0; q < 5; q++)
+          put(p.x + Math.cos(a) * tl + (rnd() - 0.5) * 8, p.y + Math.sin(a) * tl + (rnd() - 0.5) * 8,
+            pickMoss(rnd()), s + tl + 20, true, rnd() * 0.8, Math.min(1, need + 0.1));
+      }
+    }
+
+    // a leafy tuft at every tip but the trunk's: a few fresh leaves on a sapling, a full crown when old
+    if (b.kind !== 'trunk') {
+      const tip = at(b, b.len);
+      const Rt = (b.kind === 'folder' ? 26 : 20) * kk;
+      for (let i = 0; i < Rt * Rt * 0.55; i++) {
+        const a = rnd() * Math.PI * 2, r = Math.pow(rnd(), 0.7) * Rt;
+        const need = clamp((r / Rt) * 0.95 - 0.12 + rnd() * 0.12, 0, 1);
+        put(tip.x + Math.cos(a) * r, tip.y + Math.sin(a) * r * 0.8 - 3,
+          leafFor(need, rnd(), rnd()), b.len * (1 - 0.03 * (1 - r / Rt)), true, rnd() * 0.9, need);
+      }
+    }
+
+    for (const { color, p } of cells.values()) {
+      if (!b.buckets.has(color)) b.buckets.set(color, []);
+      b.buckets.get(color)!.push(p);
+    }
+  }
+
+  /* ---------- the family-tree fan ---------- */
+  const limbs: Limb[] = []; // everything drawn, including limbs pulling back in
+  const open: Limb[] = []; // open folders: trunk first, deepest last
+  const placed: Box[] = []; // label boxes, so labels avoid each other
+  const cam = { x: new Tween(0), y: new Tween(0) };
+  let planted = false;
+
+  // Angles (from straight up) for n children. Folders take the middle and keep climbing;
+  // pages spread out to the sides on the same level.
+  function fanFor(kids: TreeNode[], depth: number): number[] {
+    const n = kids.length;
+    const spread = narrow ? 1.05 : 1.2; // radians from straight up
+    let slots: number[];
+    if (n === 1) slots = [0];
+    else if (n === 2 && kids.some((c) => c.kind === 'folder')) slots = [0, (depth % 2 ? -1 : 1) * spread];
+    else slots = Array.from({ length: n }, (_, i) => lerp(-spread, spread, i / (n - 1)));
+    // folders first into the slots nearest the middle, then pages outward
+    const order = kids.map((c, i) => i).sort((a, b) =>
+      (kids[a].kind === 'folder' ? 0 : 1) - (kids[b].kind === 'folder' ? 0 : 1) || a - b);
+    const bySlot = [...slots].sort((a, b) => Math.abs(a) - Math.abs(b) || a - b);
+    const out: number[] = [];
+    order.forEach((kidIndex, i) => (out[kidIndex] = bySlot[i]));
+    return out;
+  }
+
+  function spawnKids(f: Limb, instant: boolean, delay = 0) {
+    const kids = f.node.children ?? [];
+    const slots = fanFor(kids, f.depth);
+    const tipAngle = Math.atan2(f.tip.ty, f.tip.tx);
+    const base = lerp(UP, tipAngle, 0.3);
+    const made: Limb[] = kids.map((node, i) => {
+      const kind: Kind = node.kind === 'folder' ? 'folder' : 'file';
+      const limb = makeLimb(node, kind, f.depth + 1, `${f.key}/${node.name}`, f,
+        { x: f.tip.x, y: f.tip.y }, base + slots[i], Math.abs(slots[i]) < 0.2);
+      return limb;
+    });
+    f.kids = made;
+    limbs.push(...made);
+    // labels go on once every sibling limb exists, so they can steer clear of all of them
+    made
+      .map((l, i) => ({ l, slot: slots[i] }))
+      .sort((a, b) => a.slot - b.slot) // left to right, which is also the Tab order
+      .forEach(({ l, slot }) => {
+        makeLabel(l);
+        // the middle limb leads; the side limbs follow a beat later
+        if (instant) l.grow.set(1);
+        else l.grow.go(1, growTime(l), easeOut, delay + 0.07 * Math.round(Math.abs(slot) * 2));
+      });
+  }
+
+  function growTime(b: Limb) { return 0.5 + b.len / 1600; }
+
+  // Does a label box sit on any limb, or on another label?
+  function blocked(r: Box) {
+    for (const q of placed) if (r.x0 < q.x1 && r.x1 > q.x0 && r.y0 < q.y1 && r.y1 > q.y0) return true;
+    for (const l of limbs) {
+      if (l.dying) continue;
+      const sm = l.samples;
+      for (let i = 0; i < sm.length; i += 2) {
+        const p = sm[i];
+        if (p.x > r.x0 - 4 && p.x < r.x1 + 4 && p.y > r.y0 - 5 && p.y < r.y1 + 5) return true;
+      }
+    }
+    return false;
+  }
+
+  function makeLabel(l: Limb) {
+    const isFolder = l.kind === 'folder';
+    const el = document.createElement(isFolder ? 'button' : 'a');
+    el.className = 'tnode';
+    el.innerHTML = (isFolder ? ICON.closed + ICON.open : ICON.file) +
+      `<span class="label">${l.node.name}${isFolder ? '/' : ''}</span>`;
+    const { x, y } = l.tip;
+    const lw = (l.node.name.length + (isFolder ? 1 : 0)) * 6.7 + 4;
+    const right: Box = { x0: x + 10, x1: x + 14 + lw, y0: y - 8, y1: y + 8 };
+    const left: Box = { x0: x - 14 - lw, x1: x - 10, y0: y - 8, y1: y + 8 };
+    const below: Box = { x0: x + 18, x1: x + 22 + lw, y0: y + 9, y1: y + 23 };
+    const above: Box = { x0: x + 18, x1: x + 22 + lw, y0: y - 17, y1: y - 3 };
+    const over: Box = { x0: x - lw / 2 - 2, x1: x + lw / 2 + 2, y0: y - 30, y1: y - 13 }; // centred above the icon
+    // Folders keep their label below, out of the way of the limbs they'll grow.
+    // Pages read outward: label right on the right side, left on the left.
+    // On phones, pages out on the sides put their label above the icon so it can't run off the screen.
+    const leansLeft = Math.cos(l.angle) < -0.2, onSide = Math.abs(Math.cos(l.angle)) > 0.2;
+    const outward: [string, Box][] = leansLeft ? [['flip', left], ['', right]] : [['', right], ['flip', left]];
+    const tries: [string, Box][] = isFolder
+      ? [['label-below', below], ['label-above', above], ['', right], ['flip', left]]
+      : narrow && onSide ? [['label-over', over], ...outward] : [...outward, ['label-over', over], ['label-below', below]];
+    const pick = tries.find(([, b]) => !blocked(b)) ?? tries[0];
+    if (pick[0]) el.classList.add(pick[0]);
+    l.box = pick[1];
+    placed.push(pick[1]);
+
+    const flip = pick[0] === 'flip';
+    el.style.left = `${Math.round(flip ? x + 24 : x - 8)}px`;
+    el.style.top = `${Math.round(y - 8)}px`;
+    el.tabIndex = -1;
+    if (isFolder) {
+      el.setAttribute('type', 'button');
+      el.setAttribute('aria-expanded', 'false');
+      el.addEventListener('click', () => toggle(l));
+    } else {
+      (el as HTMLAnchorElement).href = l.node.href!;
+      el.addEventListener('click', () => explore(l.node.href!)); // the tree grows when you come back
+    }
+    world.appendChild(el);
+    l.el = el;
+  }
+
+  /* ---------- opening and closing ---------- */
+  function openFolder(f: Limb, instant = false) {
+    closeBelow(open.indexOf(f.parent!));
+    if (!instant) explore(`${f.key.replace(/^evan/, '')}/`, true);
+    open.push(f);
+    f.el?.setAttribute('aria-expanded', 'true');
+    spawnKids(f, instant);
     refocus(instant);
   }
 
+  // Pull back every limb grown from folders deeper than `index` in the open path.
   function closeBelow(index: number) {
-    if (open.length > index + 1) forgetLabelsBelow(index);
     while (open.length > index + 1) {
-      const b = open.pop()!;
-      const parent = open[open.length - 1];
-      setExpanded(parent, b.folder, false);
-      b.closing = true;
-      b.grow.go(0, 0.4, easeIn);
-      dying.push(b);
+      const f = open.pop()!;
+      f.el?.setAttribute('aria-expanded', 'false');
+      for (const kid of f.kids) {
+        kid.dying = true;
+        kid.grow.go(0, 0.4, easeIn);
+        if (kid.box) placed.splice(placed.indexOf(kid.box), 1);
+        if (kid.el) { kid.el.tabIndex = -1; kid.el.classList.remove('shown'); }
+      }
+      f.kids = [];
     }
   }
 
-  // Labels on closed branches no longer block anything.
-  function forgetLabelsBelow(index: number) {
-    const keep = new Set(open.slice(0, index + 1).flatMap((b) => b.nodes.map((n) => n.el)));
-    const kept: typeof placed = [];
-    for (const b of open.slice(0, index + 1)) for (const n of b.nodes) {
-      const r = (n.el as any)._box; if (r && keep.has(n.el)) kept.push(r);
-    }
-    placed.length = 0; placed.push(...kept);
-  }
-
-  function toggle(parent: Branch, node: TreeNode) {
-    const i = open.findIndex((b) => b.folder === node);
-    if (i === -1) openFolder(parent, node);
+  function toggle(f: Limb) {
+    const i = open.indexOf(f);
+    if (i === -1) openFolder(f);
     else { closeBelow(i - 1); refocus(); }
   }
 
-  function setExpanded(parent: Branch, node: TreeNode, on: boolean) {
-    parent.nodes.find((n) => n.node === node)?.el.setAttribute('aria-expanded', String(on));
-  }
-
-  // The deepest branch is in focus; branches above it thin out, as in the reference.
+  // The newest level is in focus; levels below it thin out, as in the reference.
   function refocus(instant = false) {
-    open.forEach((b, i) => {
-      const deepest = i === open.length - 1;
-      const target = deepest ? 1 : 0.42;
-      instant ? b.moss.set(target) : b.moss.go(target, 0.5);
-      // labels on branches you've moved past step back too; the open folder on the path stays clear
-      for (const n of b.nodes) n.el.classList.toggle('dim', !deepest && n.el.getAttribute('aria-expanded') !== 'true');
-    });
-    frame(open[open.length - 1], instant);
+    const deepest = open[open.length - 1];
+    for (const l of limbs) {
+      if (l.dying) continue;
+      const active = l.parent === deepest || l === deepest;
+      const target = active ? 1 : 0.42;
+      instant ? l.moss.set(target) : l.moss.go(target, 0.5);
+      l.el?.classList.toggle('dim', !active && l.el.getAttribute('aria-expanded') !== 'true');
+    }
+    frame(deepest, instant);
     updateChrome();
   }
 
   /* ---------- camera ---------- */
   const headerSpace = () => (W < 700 ? 72 : 88);
-  function frame(b: Branch, instant = false) {
+  function frame(f: Limb, instant = false) {
     let tx: number, ty: number;
     if (!planted) {
       tx = -W / 2; ty = -(H * 0.62); // just the pot, a little below centre
     } else {
+      // fit the open folder's fork and everything growing from it
       let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-      for (const p of b.samples) { minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x); minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y); }
-      if (b.depth === 0) { minX = Math.min(minX, -14 * PG); maxX = Math.max(maxX, 14 * PG); maxY = Math.max(maxY, potBottom() + 8); }
-      for (const n of b.nodes) {
-        const lw = n.node.name.length * 7 + 40;
-        const flipped = n.el.classList.contains('flip');
-        if (flipped) minX = Math.min(minX, n.x - lw - 24); else maxX = Math.max(maxX, n.x + lw + 24);
-        minY = Math.min(minY, n.y - 34); maxY = Math.max(maxY, n.y + 40);
+      const fit = (x0: number, y0: number, x1: number, y1: number) => {
+        minX = Math.min(minX, x0); minY = Math.min(minY, y0); maxX = Math.max(maxX, x1); maxY = Math.max(maxY, y1);
+      };
+      const grp = f.kind === 'trunk' ? [f, ...f.kids] : [...f.kids];
+      fit(f.tip.x - 30, f.tip.y - 10, f.tip.x + 30, f.tip.y + 40);
+      for (const l of grp) {
+        for (const p of l.samples) fit(p.x, p.y, p.x, p.y);
+        if (l.kind !== 'trunk') fit(l.tip.x - 30, l.tip.y - 30, l.tip.x + 30, l.tip.y + 20);
+        if (l.box) fit(l.box.x0, l.box.y0, l.box.x1, l.box.y1);
       }
-      const pad = W < 700 ? 20 : 72, top = headerSpace(), bottom = 56;
+      if (f.kind === 'trunk') fit(-14 * PG, 0, 14 * PG, potBottom() + 8);
+      const pad = W < 700 ? 16 : 72, top = headerSpace(), bottom = 56;
       const vw = W - pad * 2, vh = H - top - bottom;
       tx = maxX - minX <= vw ? (minX + maxX) / 2 - W / 2 : minX - pad;
       ty = maxY - minY <= vh ? (minY + maxY) / 2 - (top + vh / 2) : minY - top;
@@ -563,11 +601,11 @@ import { tree } from '../data/tree';
   /* ---------- chrome: path and item count ---------- */
   function updateChrome() {
     pathEl.innerHTML = '';
-    open.forEach((b, i) => {
+    open.forEach((f, i) => {
       if (i) pathEl.insertAdjacentHTML('beforeend', '<span class="sep">/</span>');
       const last = i === open.length - 1;
       const seg = document.createElement(last ? 'span' : 'button');
-      seg.textContent = b.folder.name;
+      seg.textContent = f.node.name;
       if (!last) {
         seg.setAttribute('type', 'button');
         seg.addEventListener('click', () => { closeBelow(i); refocus(); });
@@ -575,9 +613,9 @@ import { tree } from '../data/tree';
       pathEl.appendChild(seg);
     });
     if (!planted) { countEl.textContent = coarse ? 'Tap the pot' : 'Click the pot'; return; }
-    const n = open[open.length - 1].folder.children?.length ?? 0;
+    const n = open[open.length - 1].node.children?.length ?? 0;
     countEl.textContent = `${n} item${n === 1 ? '' : 's'}`;
-    history.replaceState(null, '', `#/${open.slice(1).map((b) => b.folder.name).join('/')}`);
+    history.replaceState(null, '', `#/${open.slice(1).map((f) => f.node.name).join('/')}`);
   }
 
   /* ---------- render loop ---------- */
@@ -587,28 +625,27 @@ import { tree } from '../data/tree';
   function draw(now: number) {
     raf = 0;
     let busy = cam.x.tick(now) | cam.y.tick(now) | potLift.tick(now) | mat.tick(now) ? true : false;
-    for (const b of [...open, ...dying]) busy = b.grow.tick(now) || b.moss.tick(now) || busy;
+    for (const l of limbs) busy = l.grow.tick(now) || l.moss.tick(now) || busy;
 
     const cx = Math.round(cam.x.v), cy = Math.round(cam.y.v);
     world.style.transform = `translate(${-cx}px, ${-cy}px)`;
     ctx.clearRect(0, 0, W, H);
 
-    for (let i = dying.length - 1; i >= 0; i--) {
-      const b = dying[i];
-      paint(b, cx, cy);
-      if (b.grow.v <= 0) { b.nodes.forEach((n) => n.el.remove()); dying.splice(i, 1); }
+    for (let i = limbs.length - 1; i >= 0; i--) {
+      const l = limbs[i];
+      if (l.dying && l.grow.v <= 0) { l.el?.remove(); limbs.splice(i, 1); }
     }
-    for (const b of open) paint(b, cx, cy);
+    for (const l of limbs) paint(l, cx, cy);
     paintPot(cx, cy);
 
     if (busy) wake();
   }
 
-  function paint(b: Branch, cx: number, cy: number) {
+  function paint(l: Limb, cx: number, cy: number) {
     const age = planted ? mat.v : 0;
-    const reach = b.grow.v * b.len;
-    const moss = b.moss.v * (b.closing ? b.grow.v : 1);
-    for (const [color, pix] of b.buckets) {
+    const reach = l.grow.v * l.len;
+    const moss = l.moss.v * (l.dying ? l.grow.v : 1);
+    for (const [color, pix] of l.buckets) {
       ctx.fillStyle = color;
       for (const p of pix) {
         if (p.s > reach) continue;
@@ -619,11 +656,11 @@ import { tree } from '../data/tree';
         ctx.fillRect(x, y, G, G);
       }
     }
-    for (const n of b.nodes) {
-      const shown = reach >= n.s + 6;
-      if (shown !== n.el.classList.contains('shown')) {
-        n.el.classList.toggle('shown', shown);
-        n.el.tabIndex = shown ? 0 : -1;
+    if (l.el && !l.dying) {
+      const shown = l.grow.v > 0.88;
+      if (shown !== l.el.classList.contains('shown')) {
+        l.el.classList.toggle('shown', shown);
+        l.el.tabIndex = shown ? 0 : -1;
       }
     }
   }
@@ -704,7 +741,9 @@ import { tree } from '../data/tree';
     planted = true;
     labelPot();
     const trunk = open[0];
-    trunk.grow.go(1, growTime(trunk));
+    const t = growTime(trunk);
+    trunk.grow.go(1, t);
+    spawnKids(trunk, false, t * 0.72); // the first fork opens as the trunk tops out
     refocus();
   }
 
@@ -712,7 +751,7 @@ import { tree } from '../data/tree';
   function resize() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     W = innerWidth; H = innerHeight; S = clamp(W / 1200, 0.62, 1);
-    portrait = W < 760 && H > W * 1.15;
+    narrow = W < 700;
     PG = W >= 760 ? 4 : 3;
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -720,19 +759,21 @@ import { tree } from '../data/tree';
 
   function plant(path: string[]) {
     world.innerHTML = '';
-    open.length = 0; dying.length = 0;
-    const trunk = makeBranch(data, 0, 'evan', { x: 0, y: -PG }, trunkAngle());
-    placeNodes(trunk);
+    limbs.length = 0; open.length = 0; placed.length = 0;
+    const trunk = makeLimb(data, 'trunk', 0, 'evan', null, { x: 0, y: -PG }, UP, true);
+    limbs.push(trunk);
     open.push(trunk);
-    trunk.grow.set(planted ? 1 : 0);
     makePotButton();
-    frame(trunk, true);
-    let parent = trunk;
-    for (const name of path) {
-      const node = parent.folder.children?.find((c) => c.kind === 'folder' && c.name === name);
-      if (!node) break;
-      openFolder(parent, node, true);
-      parent = open[open.length - 1];
+    if (planted) {
+      trunk.grow.set(1);
+      spawnKids(trunk, true);
+      let f = trunk;
+      for (const name of path) {
+        const next = f.kids.find((l) => l.kind === 'folder' && l.node.name === name);
+        if (!next) break;
+        openFolder(next, true);
+        f = next;
+      }
     }
     refocus(true);
   }
@@ -766,7 +807,7 @@ import { tree } from '../data/tree';
   addEventListener('resize', () => {
     clearTimeout(resizeTimer);
     resizeTimer = window.setTimeout(() => {
-      const path = open.slice(1).map((b) => b.folder.name);
+      const path = open.slice(1).map((f) => f.node.name);
       resize(); plant(path); wake();
     }, 150);
   });

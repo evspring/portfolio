@@ -22,6 +22,8 @@ import FileTree from '../components/FileTree.astro';
   .tree-path button:hover { color: var(--color-ink); }
   .tree-path [aria-current] { color: var(--color-ink); }
   .tree-path .sep { color: var(--color-rule); }
+  /* the tree can grow behind the chrome; a soft halo keeps the words readable */
+  .tree-path, [data-count] { text-shadow: 0 0 3px var(--color-page), 0 0 3px var(--color-page), 0 0 8px var(--color-page); }
   html.js body { overflow: hidden; }
   html:not(.js) [data-path], html:not(.js) [data-count] { display: none; }
 </style>

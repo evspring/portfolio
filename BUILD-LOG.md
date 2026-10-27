@@ -86,3 +86,14 @@ What changed:
 - How: every pixel is generated once at full maturity with the age it needs to appear, so the tree grows smoothly between any two ages. Opening a new folder grows it on the spot; reading a page grows it when you come back (it starts at the age you last saw, then grows).
 - Content pages record the visit themselves, so arriving straight on a case study still counts.
 - Bugs caught on screenshot: the mature end barely differed from the young one (pushed thickness, flare, foliage and crowns much further); leafy tip crowns never appeared (they were set to show past the end of the branch).
+
+**#8, Evan**
+> I want it to look more like a family tree with multiple branches on the same level spread out. The motion should still be similar but with multiple branches.
+
+What changed:
+- Rebuilt the tree's structure: one limb per item instead of items strung along a single limb. Every folder is a fork; everything in it fans out from that fork at the same level.
+- Folders take the middle and climb to become the next fork; pages spread wide to both sides, leaving flatter and curling upward. Each level opens above the last.
+- Motion kept: limbs grow out from the fork (fast, then slowing), moss fills in behind, the view pans to fit the new level, older levels thin out, closing pulls limbs back. Siblings now grow together, the middle one leading and the side ones ~70ms behind.
+- Sapling and mature looks carry over: every limb's tip gets a leafy crown when old.
+- Labels pick a side that's clear of limbs and other labels; on phones, side labels sit above their icon.
+- Bugs caught on screenshot: first pass looked like a pole with short arms (side limbs now ~215px and ~69° from vertical); a phone label ran off the right edge; the item count sat on the trunk (soft white halo on the path and count).

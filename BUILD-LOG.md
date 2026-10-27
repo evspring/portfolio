@@ -167,3 +167,13 @@ What changed:
 - Clicking a page's canopy now swells it to fill the screen with that motion, in the canopy's own colours, then opens the page; the page arrives as the colour dissolves.
 - "Back to the tree" reverses it: the colour gathers, and on the tree it flows back into the canopy you came from.
 - Skipped for the email link, for Cmd/Ctrl-clicks (new tab) and for reduced motion. The browser back button restores a clean tree.
+
+**#16, Evan**
+> Lets have the pages user the same warm paper background and make that transition smoother
+
+What changed:
+- Every page now sits on the tree's warm paper (`#F7F0EA`) with the same rose and sage glows and grain.
+- Smoother handoff, three seams removed:
+  - The tree's full-screen wash and the page's were drawn differently; both now use the same gradient, sized to the screen, with grain. Measured at five points with the screen fully covered: within a few shades of each other.
+  - The page used to paint for a moment before the colour covered it (and the tree flashed on the way back); the wash now goes up in `<head>`, before the first frame.
+  - The expansion fades up out of the canopy instead of popping on top of it, and settles crisp at full screen; the arrival dissolve is a little slower (1s), easing like a wash drying.

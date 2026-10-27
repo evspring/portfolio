@@ -27,8 +27,27 @@ const {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#f7f0ea" />
     <script is:inline>document.documentElement.classList.add('js')</script>
+    <!--
+      The canopy transition: if we're arriving from the tree (or returning to it), put up the
+      same colour wash before the first frame so the handoff has no seam.
+    -->
+    <script is:inline>
+      (function () {
+        try {
+          var d = JSON.parse(sessionStorage.getItem('tree-veil') || 'null');
+          if (!d || Date.now() - d.at > 4000 || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+          var here = location.pathname;
+          if (!((d.way === 'in' && d.href === here) || (d.way === 'out' && here === '/'))) return;
+          var s = document.documentElement.style;
+          s.setProperty('--veil-deep', d.deep);
+          s.setProperty('--veil-light', d.light);
+          s.setProperty('--veil-r', Math.hypot(innerWidth, innerHeight) * 1.15 * 0.62 + 'px');
+          document.documentElement.classList.add('veil-on');
+        } catch (e) {}
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -36,7 +55,7 @@ const {
       rel="stylesheet"
     />
   </head>
-  <body class="min-h-screen">
+  <body class:list={['min-h-screen', !bare && 'paper-page']}>
     {bare ? (
       <slot />
     ) : (
@@ -53,37 +72,35 @@ const {
         -->
         <script is:inline>
           (function () {
-            var KEY = 'tree-veil', d = null;
+            var KEY = 'tree-veil', root = document.documentElement, d = null;
             var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-            try { d = JSON.parse(sessionStorage.getItem(KEY) || 'null'); } catch (e) {}
-            var fresh = d && d.way === 'in' && Date.now() - d.at < 4000 && d.href === location.pathname;
-            var paint = function (el, c) {
-              el.className = 'page-veil';
-              el.style.background = 'radial-gradient(circle at 50% 50%, ' + c.deep + ' 0%, ' + c.deep + ' 34%, ' + c.light + ' 100%)';
-              return el;
-            };
-            if (fresh && !reduced) {
-              var v = paint(document.createElement('div'), d);
-              v.classList.add('arrive');
-              document.body.appendChild(v);
-              v.addEventListener('animationend', function () { v.remove(); });
+            try { d = JSON.parse(sessionStorage.getItem(KEY) || 'null'); sessionStorage.removeItem(KEY); } catch (e) {}
+            var colours = d && d.way === 'in' && d.href === location.pathname ? d : null;
+            // arriving: the wash is already up (see <head>); let it dissolve
+            if (root.classList.contains('veil-on')) {
+              var end = function () { root.classList.remove('veil-on', 'veil-out'); };
+              requestAnimationFrame(function () {
+                root.classList.add('veil-out');
+                document.body.addEventListener('animationend', end, { once: true });
+                setTimeout(end, 1400); // in case the animation event never comes
+              });
             }
-            // remember this page's colours for the way back
-            var colours = fresh ? d : null;
+            // going back: gather the colour, then hand it to the tree
             document.addEventListener('click', function (e) {
               var a = e.target.closest && e.target.closest('[data-back]');
               if (!a || !colours || reduced || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
               e.preventDefault();
               try { sessionStorage.setItem(KEY, JSON.stringify({ light: colours.light, deep: colours.deep, href: location.pathname, at: Date.now(), way: 'out' })); } catch (err) {}
-              var v = paint(document.createElement('div'), colours);
-              v.classList.add('leave');
-              document.body.appendChild(v);
-              v.addEventListener('animationend', function () { location.href = a.href; });
+              root.style.setProperty('--veil-deep', colours.deep);
+              root.style.setProperty('--veil-light', colours.light);
+              root.style.setProperty('--veil-r', Math.hypot(innerWidth, innerHeight) * 1.15 * 0.62 + 'px');
+              root.classList.remove('veil-out');
+              root.classList.add('veil-on', 'veil-in');
+              document.body.addEventListener('animationend', function () { location.href = a.href; }, { once: true });
             });
             addEventListener('pageshow', function (e) {
-              if (e.persisted) document.querySelectorAll('.page-veil').forEach(function (n) { n.remove(); });
+              if (e.persisted) root.classList.remove('veil-on', 'veil-in', 'veil-out');
             });
-            try { if (fresh) sessionStorage.removeItem(KEY); } catch (e) {}
           })();
         </script>
 

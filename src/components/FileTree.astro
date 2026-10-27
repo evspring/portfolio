@@ -962,13 +962,15 @@ import { tree } from '../data/tree';
     g.addColorStop(0.55, v.deep);
     g.addColorStop(1, v.light);
     vctx.save();
-    vctx.filter = `blur(${lerp(2, 10, Math.sin(Math.PI * p))}px)`; // soft, wet edge, softest mid-flight
-    vctx.globalAlpha = lerp(0.85, 1, p);
+    vctx.filter = `blur(${lerp(4, 12, Math.sin(Math.PI * p)) * (1 - p * p)}px)`; // soft, wet edge, settling crisp at full screen
+    // fade up out of the canopy instead of appearing on top of it
+    const fadeIn = clamp(p / 0.22, 0, 1);
+    vctx.globalAlpha = fadeIn * fadeIn * (3 - 2 * fadeIn);
     vctx.fillStyle = g;
     vctx.fill(path);
     vctx.filter = 'none';
     // paper grain over the paint
-    if (grainPattern) { vctx.globalCompositeOperation = 'multiply'; vctx.globalAlpha = 0.5; vctx.fillStyle = grainPattern; vctx.fill(path); }
+    if (grainPattern) { vctx.globalCompositeOperation = 'multiply'; vctx.globalAlpha = 0.5 * fadeIn; vctx.fillStyle = grainPattern; vctx.fill(path); }
     vctx.restore();
   }
 
@@ -1000,7 +1002,7 @@ import { tree } from '../data/tree';
     try { sessionStorage.setItem(VEIL_KEY, JSON.stringify({ light: c.light, deep: c.deep, href, at: Date.now(), way: 'in' })); } catch {}
     runVeil({
       x: l.tip.x - cam.x.v, y: l.tip.y - cam.y.v, size: l.crownSize,
-      light: c.light, deep: c.deep, dir: 1, t0: performance.now(), dur: 0.75,
+      light: c.light, deep: c.deep, dir: 1, t0: performance.now(), dur: 0.85,
       done: () => { location.href = href; },
     });
   }
@@ -1009,19 +1011,23 @@ import { tree } from '../data/tree';
   function returnFromPage() {
     let d: { light: string; deep: string; href: string; at: number; way: string } | null = null;
     try { d = JSON.parse(sessionStorage.getItem(VEIL_KEY) || 'null'); sessionStorage.removeItem(VEIL_KEY); } catch {}
-    if (!d || d.way !== 'out' || Date.now() - d.at > 4000 || reduced) return;
+    if (!d || d.way !== 'out' || Date.now() - d.at > 4000 || reduced) { document.documentElement.classList.remove('veil-on'); return; }
     const l = limbs.find((x) => x.node.href === d!.href && !x.dying);
-    if (!l) return;
+    const html = document.documentElement;
+    if (!l) { html.classList.remove('veil-on'); return; }
     const v: VeilRun = {
       x: l.tip.x - cam.x.v, y: l.tip.y - cam.y.v, size: l.crownSize,
       light: d.light, deep: d.deep, dir: -1, t0: performance.now() + 120, dur: 0.75,
     };
-    drawVeil(1, performance.now(), v); // cover the tree before the first frame
+    drawVeil(1, performance.now(), v); // the same wash the page put up in <head>…
+    html.classList.remove('veil-on'); // …so swapping to the canvas has no seam
     runVeil(v);
   }
 
   // The browser's back button can restore this page mid-transition; start clean.
-  addEventListener('pageshow', (e) => { if ((e as PageTransitionEvent).persisted) clearVeil(); });
+  addEventListener('pageshow', (e) => {
+    if ((e as PageTransitionEvent).persisted) { clearVeil(); document.documentElement.classList.remove('veil-on'); }
+  });
 
   /* ---------- setup ---------- */
   function resize() {

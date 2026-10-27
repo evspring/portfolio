@@ -115,7 +115,7 @@ The trunk rises straight out of the soil to the first fork. The pot is also a wa
 
 | Token | Hex | Use |
 | --- | --- | --- |
-| page | `#FFFFFF` | Background |
+| page | `#F7F0EA` | Background: the tree's warm paper, on every page |
 | ink | `#262626` | Headings and body |
 | quiet | `#666261` | Secondary text |
 | mat | `#ECECE7` | The warm gray mat every screen sits on, and unlit light segments |
@@ -159,6 +159,8 @@ The trunk rises straight out of the soil to the first fork. The pot is also a wa
 Measured from sasha birukoff's "fluid illumination" (7s, 60fps; shape size tracked at 30fps): each change of shape takes ~0.6s, slow-fast-slow; one axis leads the other by ~0.1s; the centre holds still; edges stay soft and wobble while moving.
 
 - **Opening a page:** clicking a page's canopy swells it from its place on the tree to cover the screen in 0.75s, drifting to the centre. Width leads height; the edge wobbles and softens mid-flight; the fill glows from the canopy's deep colour at the centre to its light colour at the edges, with paper grain over it.
-- **Arriving:** the page opens under the same colour, which dissolves (fades, blurs, swells slightly) over 0.8s.
-- **Going back:** "Back to the tree" gathers the colour again (0.38s), and the tree flows it back down into the canopy you came from.
+- **Arriving:** the page starts under exactly the same wash (same gradient sized to the screen, same grain), put up before its first frame, so there's no seam; it then dissolves like a wash drying (fades, blurs, swells slightly) over 1s onto the page's warm paper.
+- **Going back:** "Back to the tree" gathers the colour again (0.45s); the tree starts under the same wash and flows it back down into the canopy you came from.
+- The expansion fades up out of the canopy over its first fifth instead of appearing on top of it, and settles crisp at full screen.
+- **Every page is on the tree's paper:** `#F7F0EA` with the same rose and sage glows and grain.
 - Skipped for contact (email), modifier-clicks (new tab), and reduced motion. The browser's back button restores a clean page.

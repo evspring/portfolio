@@ -24,3 +24,13 @@ What changed:
 - Home page: headline, intro, light strip, four case studies on gray mats, about, email.
 - Case study pages from Markdown in `src/content/work/`, with draft copy for Sequence and placeholders for the rest.
 - Bugs caught on screenshot: light strip nearly invisible (unlit segments were faint colour on white; now gray "unlit" sections with light layered on top); five of six light colours stripped by Tailwind's unused-token removal (fixed with `@theme static`); mat corners not applied (Tailwind 4 syntax); lone last card left a hole in the grid (now spans full width).
+
+**#3, Evan**
+> Evan Springer is good for the header. For an email you can use evan.a.springer@gmail.com. For the naming of the projects, Sequence is the original iF entry project and RealTruck Connect is a broader project built later.
+>
+> Are you able to see this video example for reference? https://www.inspora.design/posts/experimental-visual-cards
+
+What changed:
+- Contact email set across the header, footer and about section.
+- Confirmed naming: Sequence is the iF entry; RealTruck Connect is the broader project built later. Case studies already tell it that way.
+- Inspora post: page text readable (Basit's "experimental visual cards": vibrant gradients, liquid glass shaders, animated dashboard metrics), but the video file itself can't be downloaded from here. Waiting on Evan to attach the .mp4.

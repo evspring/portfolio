@@ -58,8 +58,8 @@ Ideas for where it could go next:
 
 ## Open questions
 
-- [ ] Confirm name for the site header (currently "Evan Springer").
-- [ ] Contact email to show (currently a placeholder).
+- [x] Header name: Evan Springer.
+- [x] Contact email: evan.a.springer@gmail.com.
 - [ ] Role, year and one-line outcome for each project.
 - [ ] Real screens for each mat: exported frames, recordings, or Figma links.
 - [ ] Anything under NDA that can't be shown publicly (RealTruck Connect is unreleased).

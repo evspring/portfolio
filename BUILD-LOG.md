@@ -64,3 +64,14 @@ What changed:
 - Phones: tree grows up from the bottom; folders sit at branch tips so growth heads outward.
 - Accessible: real buttons and links, Tab order follows the tree, Escape closes, reduced motion respected, plain list without JavaScript.
 - Bugs caught on screenshot: moss too sparse and limbs too straight next to the reference (denser clumps, thicker bark, a wave along each limb); labels sitting on branches (each label now checks for branches and other labels before picking a side); phone tree crossing itself (portrait layout); hidden fallback list reachable by Tab (now only shown without JavaScript); header after the tree in Tab order; changing the folder in the address bar didn't update the tree.
+
+**#6, Evan**
+> To start the interaction, have a planted pot where the user has to click on it the start the tree growth and access files
+
+What changed:
+- Home page opens on a pixel-art pot, drawn in the same pixel grid as the tree: stone greys, dark soil with moss specks, a small sprout. "Click the pot" (or "Tap the pot" on touch screens) sits where the item count goes.
+- Hovering the pot makes the sprout perk up; clicking gives the pot a small hop and the trunk grows out of the soil, straight up and then leaning right, while the view pans to fit it.
+- Dropped the automatic opening of `work/`: the visitor now starts the growth themselves.
+- Trunk now holds files first and `work/` at its tip on every screen size, so each new branch grows outward from the one before.
+- Once grown, the pot takes you back to the top of the tree. Pages link back with `/#/…`, which skips the pot.
+- Pot pixels are 4px on big screens (3px on phones) so it holds the empty page.

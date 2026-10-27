@@ -48,8 +48,8 @@ export function folderPathTo(href: string, node: TreeNode = tree, trail: string[
   return null;
 }
 
-/** Link back to the home page with the tree opened to this page's folder. */
+/** Link back to the home page with the tree grown and opened to this page's folder. */
 export function treeLinkFor(href: string): string {
-  const path = folderPathTo(href);
-  return path && path.length ? `/#/${path.join('/')}` : '/';
+  const path = folderPathTo(href) ?? [];
+  return `/#/${path.join('/')}`; // "#/" also tells the home page the tree is already grown
 }

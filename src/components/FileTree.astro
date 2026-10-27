@@ -1,7 +1,8 @@
 ---
 /*
   The home page: the site as a literal file tree, after Finn Taylor's
-  "Literal file tree". Folders grow branches, files open pages.
+  "Literal file tree". It starts as a planted pot; clicking the pot grows the
+  trunk. Folders grow branches, files open pages.
 
   Motion measured from the reference video (DESIGN-BRIEF.md, "The tree"):
   - a branch grows in ~0.85s, fast then slowing; moss fills in just behind the tip
@@ -55,6 +56,8 @@ import { tree } from '../data/tree';
   .tree-list { padding: 96px 24px; font-size: var(--text-base); line-height: 2; }
   html.js .tree-list { display: none; }
   html:not(.js) .tree-list ul ul { padding-left: 1.25rem; }
+
+  .pot-btn { position: absolute; padding: 0; background: none; border: 0; border-radius: 14px; cursor: pointer; }
 
   .tnode {
     position: absolute;
@@ -123,12 +126,13 @@ import { tree } from '../data/tree';
 
   const G = 3; // size of one tree pixel, in CSS px
   let W = 0, H = 0, S = 1;
-  // Tall, narrow screens grow the tree upward from the bottom; wide screens grow it left to right.
+  // The trunk rises out of the pot. Wide screens let it lean right, where there's room to grow.
   let portrait = false;
-  const trunkAngle = () => (portrait ? -1.3 : -0.06);
+  const trunkAngle = () => (portrait ? -1.25 : -1.0);
   // How much each new branch turns from the spot it grows from. Alternates so the tree zigzags.
   const turnFor = (depth: number) =>
-    portrait ? (depth % 2 === 0 ? 0.8 : -0.6) : (depth % 2 === 0 ? -0.78 : 0.6);
+    portrait ? (depth % 2 === 0 ? 0.8 : -0.6) : (depth % 2 === 0 ? 1.05 : -0.7);
+  const coarse = matchMedia('(pointer: coarse)').matches;
 
   /* ---------- small helpers ---------- */
   const easeOut = (u: number) => 1 - Math.pow(1 - u, 3);
@@ -194,10 +198,9 @@ import { tree } from '../data/tree';
   function makeBranch(folder: TreeNode, depth: number, key: string, anchor: { x: number; y: number }, angle: number): Branch {
     const rnd = rngFrom(hash(key));
     const n = folder.children?.length ?? 0;
-    const len = depth === 0
-      ? (portrait ? Math.min(H * 0.64, 600) : Math.min(W * 0.74, 1000))
-      : (170 + 105 * n) * S;
-    const bend = depth === 0 ? 0.22 : 0.16 + rnd() * 0.18;
+    const len = depth === 0 ? Math.min(H * 0.58, 560) : (170 + 105 * n) * S;
+    // the trunk leaves the soil straight up, then leans; branches curve gently
+    const bend = depth === 0 ? -Math.PI / 2 - angle : 0.16 + rnd() * 0.18;
     const dir = (a: number) => ({ x: Math.cos(a), y: Math.sin(a) });
     const P0 = anchor;
     const P3 = { x: P0.x + len * Math.cos(angle), y: P0.y + len * Math.sin(angle) };
@@ -331,11 +334,9 @@ import { tree } from '../data/tree';
   }
 
   function placeNodes(b: Branch) {
-    // Wide screens: folders first, so new branches sprout near the base, as in the reference.
-    // Tall screens: folders at the tip, so new growth heads outward instead of back across the tree.
-    const folderFirst = !portrait;
+    // Files first, folders at the tip, so new growth heads outward instead of back across the tree.
     const kids = [...(b.folder.children ?? [])].sort((a, c) =>
-      a.kind === c.kind ? 0 : (a.kind === 'folder') === folderFirst ? -1 : 1);
+      a.kind === c.kind ? 0 : a.kind === 'folder' ? 1 : -1);
     const n = kids.length;
     let fileSide = b.depth % 2 ? 1 : -1;
     if (b.depth === 0) placed.length = 0;
@@ -396,7 +397,7 @@ import { tree } from '../data/tree';
   const open: Branch[] = []; // trunk first, deepest last
   const dying: Branch[] = [];
   const cam = { x: new Tween(0), y: new Tween(0) };
-  let userActed = false;
+  let planted = false;
 
   function childBranch(parent: Branch, node: TreeNode) {
     const spot = parent.nodes.find((n) => n.node === node)!;
@@ -438,7 +439,6 @@ import { tree } from '../data/tree';
   }
 
   function toggle(parent: Branch, node: TreeNode) {
-    userActed = true;
     const i = open.findIndex((b) => b.folder === node);
     if (i === -1) openFolder(parent, node);
     else { closeBelow(i - 1); refocus(); }
@@ -465,12 +465,12 @@ import { tree } from '../data/tree';
   const headerSpace = () => (W < 700 ? 72 : 88);
   function frame(b: Branch, instant = false) {
     let tx: number, ty: number;
-    if (b.depth === 0) {
-      if (portrait) { tx = -W * 0.12; ty = -(H + 24); } // trunk rises from just below the bottom edge
-      else { tx = 28; ty = -(H * 0.58); } // trunk enters from just past the left edge
+    if (!planted) {
+      tx = -W / 2; ty = -(H * 0.62); // just the pot, a little below centre
     } else {
       let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
       for (const p of b.samples) { minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x); minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y); }
+      if (b.depth === 0) { minX = Math.min(minX, -14 * PG); maxX = Math.max(maxX, 14 * PG); maxY = Math.max(maxY, potBottom() + 8); }
       for (const n of b.nodes) {
         const lw = n.node.name.length * 7 + 40;
         const flipped = n.el.classList.contains('flip');
@@ -496,14 +496,14 @@ import { tree } from '../data/tree';
       seg.textContent = b.folder.name;
       if (!last) {
         seg.setAttribute('type', 'button');
-        seg.addEventListener('click', () => { userActed = true; closeBelow(i); refocus(); });
+        seg.addEventListener('click', () => { closeBelow(i); refocus(); });
       } else seg.setAttribute('aria-current', 'location');
       pathEl.appendChild(seg);
     });
+    if (!planted) { countEl.textContent = coarse ? 'Tap the pot' : 'Click the pot'; return; }
     const n = open[open.length - 1].folder.children?.length ?? 0;
     countEl.textContent = `${n} item${n === 1 ? '' : 's'}`;
-    const hash = open.slice(1).map((b) => b.folder.name).join('/');
-    history.replaceState(null, '', hash ? `#/${hash}` : location.pathname);
+    history.replaceState(null, '', `#/${open.slice(1).map((b) => b.folder.name).join('/')}`);
   }
 
   /* ---------- render loop ---------- */
@@ -512,7 +512,7 @@ import { tree } from '../data/tree';
 
   function draw(now: number) {
     raf = 0;
-    let busy = cam.x.tick(now) | cam.y.tick(now) ? true : false;
+    let busy = cam.x.tick(now) | cam.y.tick(now) | potLift.tick(now) ? true : false;
     for (const b of [...open, ...dying]) busy = b.grow.tick(now) || b.moss.tick(now) || busy;
 
     const cx = Math.round(cam.x.v), cy = Math.round(cam.y.v);
@@ -525,6 +525,7 @@ import { tree } from '../data/tree';
       if (b.grow.v <= 0) { b.nodes.forEach((n) => n.el.remove()); dying.splice(i, 1); }
     }
     for (const b of open) paint(b, cx, cy);
+    paintPot(cx, cy);
 
     if (busy) wake();
   }
@@ -551,22 +552,104 @@ import { tree } from '../data/tree';
     }
   }
 
+  /* ---------- the pot ---------- */
+  // Pixel art in grid cells, origin at the centre of the soil. y grows downward.
+  let PG = 3; // the pot's pixel size: a touch chunkier on big screens, where it's alone on the page
+  const potBottom = () => 21 * PG;
+  const POT = {
+    light: C('pot-light'), mid: C('pot'), shade: C('bark-light'), line: BARK.dark, soil: C('soil'),
+  };
+  const potPixels: [number, number, string][] = [];
+  (() => {
+    const rnd = rngFrom(hash('pot'));
+    const fill = (x: number, y: number, hw: number) => {
+      const u = (x + hw) / (2 * hw), d = (x + y) & 1;
+      if (u < 0.22 || (u < 0.3 && d)) return POT.light;
+      if (u > 0.74 || (u > 0.66 && d)) return POT.shade;
+      return POT.mid;
+    };
+    for (let x = -11; x <= 11; x++) potPixels.push([x, -1, POT.line]); // back lip
+    for (let x = -12; x <= 12; x++) // soil, with a few moss specks
+      potPixels.push([x, 0, Math.abs(x) === 12 ? POT.line : rnd() < 0.12 ? pickMoss(rnd()) : POT.soil]);
+    for (let y = 1; y <= 4; y++) for (let x = -13; x <= 13; x++)
+      potPixels.push([x, y, y === 1 || y === 4 || Math.abs(x) === 13 ? POT.line : fill(x, y, 13)]);
+    for (let y = 5; y <= 20; y++) {
+      const hw = Math.round(lerp(11, 8, (y - 5) / 15));
+      for (let x = -hw; x <= hw; x++) potPixels.push([x, y, Math.abs(x) === hw ? POT.line : fill(x, y, hw)]);
+    }
+    for (let x = -8; x <= 8; x++) potPixels.push([x, 21, POT.line]);
+  })();
+  // A sprout waits in the soil until the pot is clicked; it perks up on hover.
+  const SPROUT: [number, number, number][] = [
+    [0, -1, 2], [0, -2, 2], [0, -3, 2], [-1, -3, 0], [-2, -4, 0], [1, -4, 1], [2, -5, 1], [-1, -4, 3],
+  ];
+  const SPROUT_HOVER: [number, number, number][] = [[0, -4, 2], [0, -5, 0], [-1, -6, 1], [1, -6, 4], [-3, -5, 0], [3, -6, 1]];
+  const potLift = new Tween(0);
+  let potHover = false;
+
+  function paintPot(cx: number, cy: number) {
+    const lift = Math.round(potLift.v);
+    for (const [x, y, c] of potPixels) { ctx.fillStyle = c; ctx.fillRect(x * PG - cx, y * PG - cy + lift, PG, PG); }
+    if (planted) return;
+    for (const [x, y, i] of potHover ? [...SPROUT, ...SPROUT_HOVER] : SPROUT) {
+      ctx.fillStyle = MOSS[i][0];
+      ctx.fillRect(x * PG - cx, y * PG - cy + lift, PG, PG);
+    }
+  }
+
+  let potBtn: HTMLButtonElement;
+  function makePotButton() {
+    potBtn = document.createElement('button');
+    potBtn.type = 'button';
+    potBtn.className = 'pot-btn';
+    potBtn.style.left = `${-16 * PG}px`;
+    potBtn.style.top = `${-9 * PG}px`;
+    potBtn.style.width = `${32 * PG}px`;
+    potBtn.style.height = `${32 * PG}px`;
+    const hover = (on: boolean) => { potHover = on; wake(); };
+    potBtn.addEventListener('pointerenter', () => hover(true));
+    potBtn.addEventListener('pointerleave', () => hover(false));
+    potBtn.addEventListener('focus', () => hover(true));
+    potBtn.addEventListener('blur', () => hover(false));
+    potBtn.addEventListener('click', () => {
+      potLift.go(-4, 0.1);
+      setTimeout(() => potLift.go(0, 0.35), 100);
+      if (!planted) growTree();
+      else if (open.length > 1) { closeBelow(0); refocus(); } // the pot also takes you back to the top
+    });
+    world.appendChild(potBtn);
+    labelPot();
+  }
+  function labelPot() {
+    potBtn.setAttribute('aria-label', planted ? 'Back to the top of the tree' : 'Grow the tree');
+  }
+
+  function growTree() {
+    planted = true;
+    labelPot();
+    const trunk = open[0];
+    trunk.grow.go(1, growTime(trunk));
+    refocus();
+  }
+
   /* ---------- setup ---------- */
   function resize() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     W = innerWidth; H = innerHeight; S = clamp(W / 1200, 0.62, 1);
     portrait = W < 760 && H > W * 1.15;
+    PG = W >= 760 ? 4 : 3;
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
-  function plant(path: string[], animate: boolean) {
+  function plant(path: string[]) {
     world.innerHTML = '';
     open.length = 0; dying.length = 0;
-    const trunk = makeBranch(data, 0, 'evan', { x: 0, y: 0 }, trunkAngle());
+    const trunk = makeBranch(data, 0, 'evan', { x: 0, y: -PG }, trunkAngle());
     placeNodes(trunk);
     open.push(trunk);
-    animate ? trunk.grow.go(1, growTime(trunk)) : trunk.grow.set(1);
+    trunk.grow.set(planted ? 1 : 0);
+    makePotButton();
     frame(trunk, true);
     let parent = trunk;
     for (const name of path) {
@@ -575,39 +658,39 @@ import { tree } from '../data/tree';
       openFolder(parent, node, true);
       parent = open[open.length - 1];
     }
-    refocus(!animate || path.length > 0);
+    refocus(true);
   }
+
+  // "#/…" in the address means the tree is already grown (e.g. coming back from a page).
+  const readHash = () => ({
+    grown: location.hash.startsWith('#/'),
+    path: decodeURIComponent(location.hash.replace(/^#\/?/, '')).split('/').filter(Boolean),
+  });
 
   document.documentElement.classList.add('js');
   resize();
-  const startPath = decodeURIComponent(location.hash.replace(/^#\/?/, '')).split('/').filter(Boolean);
-  plant(startPath, startPath.length === 0);
+  const start = readHash();
+  planted = start.grown;
+  plant(start.path);
   wake();
-
-  // First visit: once the trunk has grown, open work/ so people see how folders behave.
-  if (!startPath.length) {
-    setTimeout(() => {
-      const work = data.children?.find((c) => c.name === 'work');
-      if (!userActed && work && open.length === 1) openFolder(open[0], work);
-    }, reduced ? 0 : 1500);
-  }
 
   let resizeTimer = 0;
   addEventListener('resize', () => {
     clearTimeout(resizeTimer);
     resizeTimer = window.setTimeout(() => {
       const path = open.slice(1).map((b) => b.folder.name);
-      resize(); plant(path, false); wake();
+      resize(); plant(path); wake();
     }, 150);
   });
 
   // A link to another folder on this page (e.g. /#/work) replants the tree there.
   addEventListener('hashchange', () => {
-    const path = decodeURIComponent(location.hash.replace(/^#\/?/, '')).split('/').filter(Boolean);
-    userActed = true; plant(path, false); wake();
+    const next = readHash();
+    if (!next.grown) return;
+    planted = true; plant(next.path); wake();
   });
 
   addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && open.length > 1) { userActed = true; closeBelow(open.length - 2); refocus(); }
+    if (e.key === 'Escape' && open.length > 1) { closeBelow(open.length - 2); refocus(); }
   });
 </script>

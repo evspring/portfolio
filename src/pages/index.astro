@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
 import LightStrip from '../components/LightStrip.astro';
+import PhoneTrio from '../components/PhoneTrio.astro';
 
 const work = (await getCollection('work')).sort((a, b) => a.data.order - b.data.order);
 
@@ -21,7 +22,11 @@ const isOrphan = (i: number) =>
       I'm Evan, a product designer at RealTruck. Most recently I designed Sequence,
       the app that puts a truck's lighting in its owner's hands.
     </p>
-    <div class="mt-14">
+    <a
+      href="mailto:evan.a.springer@gmail.com"
+      class="mt-8 inline-flex h-11 items-center rounded-[10px] bg-action px-6 text-sm font-medium text-white no-underline transition-transform duration-300 ease-(--ease-weight) hover:-translate-y-px"
+    >Email me</a>
+    <div class="mt-16">
       <LightStrip />
     </div>
   </section>
@@ -35,20 +40,24 @@ const isOrphan = (i: number) =>
           <a href={`/work/${item.id}/`} class="group block no-underline">
             <div
               class:list={[
-                'mat grid place-items-center rounded-(--radius-mat) bg-mat',
+                'mat overflow-hidden rounded-(--radius-mat) bg-mat',
                 item.data.featured || isOrphan(i) ? 'aspect-[16/8]' : 'aspect-[4/3]',
               ]}
             >
-              <!-- TODO: replace with a real screen on the mat -->
-              <span class="text-sm text-quiet">{item.data.title} screens</span>
+              <!-- TODO: replace placeholders with real screens -->
+              <PhoneTrio count={item.data.featured || isOrphan(i) ? 3 : 2} label={item.data.title} />
             </div>
             <div class="mt-4 flex items-baseline justify-between gap-4">
               <h3 class="text-base font-medium group-hover:underline underline-offset-4">
                 {item.data.title}
               </h3>
-              <span class="shrink-0 text-sm text-quiet">
-                {item.data.status ?? item.data.award ?? item.data.year}
-              </span>
+              {item.data.status || item.data.award ? (
+                <span class="shrink-0 rounded-full bg-chip px-2.5 py-0.5 text-sm">
+                  {item.data.status ?? item.data.award}
+                </span>
+              ) : (
+                <span class="shrink-0 text-sm text-quiet">{item.data.year}</span>
+              )}
             </div>
             <p class="mt-1 max-w-[56ch] text-quiet">{item.data.summary}</p>
           </a>

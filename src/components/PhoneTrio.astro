@@ -1,0 +1,84 @@
+---
+/*
+  How app work is shown on the mat, after Basit's reels: white phone cards
+  standing side by side on warm gray, each with a small notch pill.
+  These are placeholders until real screens arrive: pass `screens` (image
+  paths) to fill them.
+*/
+interface Props {
+  count?: 2 | 3;
+  label: string;
+  screens?: string[];
+}
+const { count = 3, label, screens = [] } = Astro.props;
+---
+
+<div class="trio" style={`--n:${count}`} aria-hidden={screens.length ? undefined : 'true'}>
+  {Array.from({ length: count }, (_, i) => (
+    <div class="card">
+      <span class="notch" />
+      {screens[i] ? (
+        <img src={screens[i]} alt={`${label} screen ${i + 1}`} loading="lazy" />
+      ) : (
+        <div class="skeleton">
+          <span class="line w-3/5" />
+          <span class="line w-2/5" />
+          <span class="block" />
+          <span class="line w-4/5" />
+          <span class="btn" />
+        </div>
+      )}
+    </div>
+  ))}
+</div>
+
+<style>
+  /* Whole cards standing on the mat, centred, like the reels */
+  .trio {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 3%;
+    height: 100%;
+  }
+  .card {
+    position: relative;
+    height: 84%;
+    aspect-ratio: 9 / 19.5;
+    background: var(--color-card);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    transition: transform 0.9s var(--ease-weight);
+  }
+  /* Cards lift a little when the project is hovered: the response to an action, not ambient motion */
+  :global(.group:hover) .card { transform: translateY(-2%); }
+  :global(.group:hover) .card:nth-child(2) { transition-delay: 0.05s; }
+  :global(.group:hover) .card:nth-child(3) { transition-delay: 0.1s; }
+
+  .notch {
+    position: absolute;
+    top: 3%;
+    left: 50%;
+    width: 16%;
+    height: 2.2%;
+    translate: -50% 0;
+    border-radius: 999px;
+    background: var(--color-mat);
+  }
+  img { width: 100%; height: 100%; object-fit: cover; }
+
+  .skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 6%;
+    padding: 22% 9% 0;
+    height: 100%;
+  }
+  .line { height: 2.5%; min-height: 4px; border-radius: 99px; background: var(--color-mat); }
+  .block { flex: 0 0 34%; border-radius: 10px; background: var(--color-mat); }
+  .btn { margin-top: auto; margin-bottom: 14%; height: 5%; min-height: 8px; border-radius: 6px; background: var(--color-chip); }
+
+  @media (max-width: 640px) {
+    .card { border-radius: 12px; }
+  }
+</style>

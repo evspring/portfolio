@@ -5,11 +5,15 @@
   Change a value here and it changes everywhere.
 */
 @theme static {
+  /* Sampled from Basit's reels (see DESIGN-BRIEF.md, "What the reels do") */
   --color-page: #ffffff;
-  --color-ink: #1d2126;      /* body text and headings */
-  --color-quiet: #6c7178;    /* secondary text */
-  --color-mat: #eef0f2;      /* the gray mat every screenshot sits on */
-  --color-rule: #e3e5e8;     /* the only line colour */
+  --color-ink: #262626;      /* body text and headings */
+  --color-quiet: #666261;    /* secondary text, warm like the reels */
+  --color-mat: #ecece7;      /* warm gray mat every screen sits on */
+  --color-card: #fdfdfd;     /* phone cards on the mat */
+  --color-chip: #e6e4e0;     /* status chips */
+  --color-action: #2d0f12;   /* the one primary button, a deep oxblood */
+  --color-rule: #e4e3de;     /* the only line colour */
 
   /* The Sequence light colours — the site's one source of colour */
   --color-light-1: #ff5a36;
@@ -29,31 +33,36 @@
   --text-2xl: 2.25rem;
 
   --radius-mat: 14px;
-  --ease-weight: cubic-bezier(0.22, 1, 0.36, 1); /* things that move with weight */
+  --radius-card: 18px;
+  /* Things that move with weight: fast attack, long settle (measured from reel b) */
+  --ease-weight: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-html {
-  background: var(--color-page);
-  color: var(--color-ink);
-  font-family: var(--font-sans);
-  font-size: 100%;
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
-}
+/* Base styles live in Tailwind's base layer so utilities can override them */
+@layer base {
+  html {
+    background: var(--color-page);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 100%;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
 
-body {
-  font-size: var(--text-base);
-  line-height: 1.55;
-}
+  body {
+    font-size: var(--text-base);
+    line-height: 1.55;
+  }
 
-::selection { background: var(--color-mat); }
+  ::selection { background: var(--color-mat); }
 
-a { color: inherit; }
+  a { color: inherit; }
 
-:focus-visible {
-  outline: 2px solid var(--color-light-4);
-  outline-offset: 3px;
-  border-radius: 4px;
+  :focus-visible {
+    outline: 2px solid var(--color-light-4);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

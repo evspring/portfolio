@@ -59,15 +59,12 @@ const patterns = ['chase', 'breathe', 'wave'] as const;
     color: var(--color-quiet);
   }
 
-  /* chase: one light runs down the step */
+  /* chase: one light glides down the step. Driven by the script below, with
+     the motion measured from Basit's reel: a kick every 3.6s (fast attack,
+     long settle) and a slow creep that never quite stops. */
   [data-pattern='chase'] .seg::after {
-    animation: chase 2.4s var(--ease-weight) infinite;
-    animation-delay: calc(var(--i) * 0.18s);
-  }
-  @keyframes chase {
-    0%, 100% { opacity: 0; box-shadow: none; }
-    12% { opacity: 1; box-shadow: 0 0 18px -2px var(--c); }
-    45% { opacity: 0; box-shadow: none; }
+    opacity: var(--lit, 0);
+    box-shadow: 0 0 calc(var(--lit, 0) * 20px) calc(var(--lit, 0) * -2px) var(--c);
   }
 
   /* breathe: every section together, slow */
@@ -95,7 +92,34 @@ const patterns = ['chase', 'breathe', 'wave'] as const;
 </style>
 
 <script>
+  // Motion profile measured from Basit's reel (carousel speed tracked frame by frame):
+  // one step every 3.6s, ~70% of it in a kick that peaks ~0.4s in and settles over ~2s,
+  // the rest a constant creep, so the light is never fully still.
+  const CYCLE = 3.6, KICK = 2.8, KICK_SHARE = 0.7;
+  const smooth = (u: number) => u * u * (3 - 2 * u);
+  const settle = (u: number) => 1 - Math.pow(1 - smooth(u), 3.5);
+  const position = (t: number) => {
+    const step = Math.floor(t / CYCLE), local = t - step * CYCLE;
+    return step + KICK_SHARE * settle(Math.min(local / KICK, 1)) + (1 - KICK_SHARE) * (local / CYCLE);
+  };
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
   document.querySelectorAll<HTMLButtonElement>('.light-strip').forEach((strip) => {
+    const segs = [...strip.querySelectorAll<HTMLElement>('.seg')];
+    const start = performance.now();
+    const tick = (now: number) => {
+      if (strip.dataset.pattern === 'chase' && !reduced) {
+        const pos = position((now - start) / 1000) % segs.length;
+        segs.forEach((seg, i) => {
+          let d = Math.abs(i - pos);
+          d = Math.min(d, segs.length - d); // wrap from the last section back to the first
+          seg.style.setProperty('--lit', Math.max(0, 1 - d / 0.9).toFixed(3));
+        });
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+
     const list = (strip.dataset.patterns ?? 'chase').split(',');
     const caption = strip.querySelector('.caption')!;
     strip.addEventListener('click', () => {

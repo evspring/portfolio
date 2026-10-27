@@ -34,3 +34,15 @@ What changed:
 - Contact email set across the header, footer and about section.
 - Confirmed naming: Sequence is the iF entry; RealTruck Connect is the broader project built later. Case studies already tell it that way.
 - Inspora post: page text readable (Basit's "experimental visual cards": vibrant gradients, liquid glass shaders, animated dashboard metrics), but the video file itself can't be downloaded from here. Waiting on Evan to attach the .mp4.
+
+**#4, Evan**
+> Disregard the link I sent, I was just curious if you could view it. I've linked the video files from the original reference posts from Basit that Adam used.
+
+What changed:
+- Studied both reels frame by frame: contact sheets at 2fps, full-res frames, sampled colours, tracked the carousel's speed at 20fps across each whole reel. Findings written into DESIGN-BRIEF.md under "What the reels do".
+- Colours now sampled from the reels: warm gray mat `#ECECE7`, cards `#FDFDFD`, ink `#262626`, warm secondary `#666261`, chips `#E6E4E0`, oxblood button `#2D0F12`.
+- Project mats now hold whole white phone cards with notch pills (placeholders until real screens), three on wide mats, two on paired ones.
+- Added one primary button, "Email me", in the reels' oxblood.
+- Status and award shown as pill chips, like the reels' tags.
+- Light strip chase rebuilt on the measured motion: a kick every 3.6s (fast attack, long settle) with a slow creep that never stops. Checked the curve numerically against the reel (peak-to-creep ~9:1 vs the reel's ~8:1).
+- Bugs caught on screenshot: "Email me" label invisible (base link colour outside Tailwind's layers beat `text-white`; moved base styles into `@layer base`); phone cards bled off the bottom of the mat (now whole and centred, as in the reels).

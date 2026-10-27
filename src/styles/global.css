@@ -23,22 +23,22 @@
   --color-light-5: #7b5cff;
   --color-light-6: #ff4fb8;
 
-  /* The tree: pixel bark and moss, sampled from Finn Taylor's "Literal file tree" */
-  --color-bark-light: #a3a3a0;
-  --color-bark: #7d7d79;
-  --color-bark-dark: #262626;
-  --color-bark-speck: #b8473a;
-  --color-moss-lime: #8fe800;
-  --color-moss-bright: #b4f03a;
-  --color-moss-olive: #6f8c0a;
-  --color-moss-pale: #dcefa6;
-  --color-moss-cream: #eef0b4;
+  /* The tree, in watercolour: warm paper, coral stems, sage and teal canopies */
+  --color-paper: #f7f0ea;
+  --color-wash-rose: #e8bdb6;
+  --color-stem: #c9706e;
+  --color-stem-deep: #9d4b55;
+  --color-leaf-sage: #8eae9b;
+  --color-leaf-teal: #5e9090;
+  --color-leaf-deep: #3f6a63;
+  --color-leaf-mint: #cfe3d7;
+  --color-bud: #46605d;
   /* The terracotta pot the tree grows from */
-  --color-pot-light: #e59a6c;
-  --color-pot: #c66b3f;
-  --color-pot-shade: #9a4b29;
-  --color-pot-line: #4f2516;
-  --color-soil: #3d2a20;
+  --color-pot-light: #e7a27a;
+  --color-pot: #cd7651;
+  --color-pot-shade: #9f5236;
+  --color-pot-line: #5a2c1d;
+  --color-soil: #4a3328;
 
   --font-sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
 

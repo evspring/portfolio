@@ -1,23 +1,29 @@
 ---
 /*
-  The home page: the site as a literal file tree, after Finn Taylor's
-  "Literal file tree", shaped like a family tree. It starts as a planted
-  terracotta pot; clicking the pot grows a sapling that forks. Every item in a
-  folder gets its own limb fanning out from that fork: folders climb up the
-  middle, pages spread to the sides on the same level. The tree is full-grown
-  from the start; it grows outward as people open folders.
+  The home page: the site as a literal file tree, shaped like a family tree and
+  painted in watercolour (the look is after the game Gris: soft washes on warm
+  paper, thin flowing coral stems, candelabra twigs tipped with square buds,
+  big translucent geometric canopies). The tree, its shapes and its colours are
+  our own; nothing is copied from the game.
 
-  Motion measured from the reference video (DESIGN-BRIEF.md, "The tree"):
-  - a branch grows in ~0.85s, fast then slowing; moss fills in just behind the tip
-  - opening a folder pans the view ~0.65s to follow the new branch, at the same time
-  - older branches thin out as you go deeper; closing pulls a branch back in ~0.4s
+  It starts as a planted terracotta pot. Clicking the pot grows a full-grown
+  trunk that forks. Every item in a folder gets its own limb fanning out from
+  that fork: folders climb up the middle and bloom into canopies, pages spread
+  to the sides and end in square buds. It grows outward as people open folders.
+
+  Motion (from Finn Taylor's "Literal file tree", DESIGN-BRIEF.md "The tree"):
+  - a limb grows in ~0.85s, fast then slowing; canopies bloom open as it arrives
+  - opening a folder pans the view ~0.65s to fit the new level, at the same time
+  - older levels fade back as you go deeper; closing pulls limbs back in ~0.4s
 */
 import { tree } from '../data/tree';
 // The nested list below holds every page, shown if JavaScript is off.
 ---
 
 <div class="tree-root" data-tree>
+  <canvas class="tree-bg" aria-hidden="true"></canvas>
   <canvas class="tree-canvas" aria-hidden="true"></canvas>
+  <canvas class="tree-grain" aria-hidden="true"></canvas>
   <div class="tree-world" data-world></div>
 
   <nav class="tree-list" aria-label="Pages">
@@ -50,63 +56,72 @@ import { tree } from '../data/tree';
 <script type="application/json" id="tree-data" set:html={JSON.stringify(tree)} />
 
 <style is:global>
-  .tree-root { position: fixed; inset: 0; overflow: hidden; }
-  .tree-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .tree-root { position: fixed; inset: 0; overflow: hidden; background: var(--color-paper); }
+  .tree-bg, .tree-canvas, .tree-grain { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  /* paper grain sits over the paint, so washes pick up the texture of the paper */
+  .tree-grain { mix-blend-mode: multiply; opacity: 0.5; }
   .tree-world { position: absolute; left: 0; top: 0; will-change: transform; }
 
   /* Every page as a plain list, for when JavaScript is off. With it on, the tree's own
      links and folder buttons (with aria-expanded) do the job, so the list steps aside. */
-  .tree-list { padding: 96px 24px; font-size: var(--text-base); line-height: 2; }
+  .tree-list { position: relative; padding: 96px 24px; font-size: var(--text-base); line-height: 2; }
   html.js .tree-list { display: none; }
   html:not(.js) .tree-list ul ul { padding-left: 1.25rem; }
 
-  .pot-btn { position: absolute; padding: 0; background: none; border: 0; border-radius: 14px; cursor: pointer; }
+  .pot-btn { position: absolute; padding: 0; background: none; border: 0; border-radius: 24px; cursor: pointer; }
 
+  /* A node sits exactly on a limb's tip. Its hit area covers the painted bud or canopy;
+     its label sits wherever it's clear of the tree. */
   .tnode {
     position: absolute;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    padding: 6px 8px;
-    margin: -6px -8px;
+    width: 2px;
+    height: 2px;
+    margin: -1px 0 0 -1px;
+    padding: 0;
     font: inherit;
     font-size: 12.5px;
     line-height: 1;
     color: var(--color-quiet);
     background: none;
     border: 0;
-    white-space: nowrap;
     text-decoration: none;
     cursor: pointer;
     opacity: 0;
-    transform: translateY(3px);
-    transition: opacity 0.25s ease, transform 0.35s var(--ease-weight), color 0.15s ease;
+    transition: opacity 0.35s ease, color 0.15s ease;
     pointer-events: none;
   }
-  .tnode.shown { opacity: 1; transform: none; pointer-events: auto; }
-  .tnode.shown.dim { opacity: 0.4; }
+  .tnode .hit { position: absolute; translate: -50% -50%; border-radius: 10px; }
+  .tnode .label {
+    position: absolute;
+    white-space: nowrap;
+    padding: 4px 2px;
+    translate: 0 -50%;
+    text-shadow: 0 0 3px var(--color-paper), 0 0 3px var(--color-paper), 0 0 8px var(--color-paper);
+  }
+  .tnode.read-left .label { translate: -100% -50%; }
+  .tnode.read-centre .label { translate: -50% -50%; }
+  .tnode.shown { opacity: 1; pointer-events: auto; }
+  .tnode.shown.dim { opacity: 0.45; }
   .tnode.shown.dim:hover, .tnode.shown.dim:focus-visible { opacity: 1; }
   .tnode:hover, .tnode:focus-visible, .tnode[aria-expanded='true'] { color: var(--color-ink); }
-  .tnode svg { flex: none; width: 16px; height: 16px; fill: var(--color-page); stroke: currentColor; stroke-width: 1.15; stroke-linejoin: round; }
-  .tnode .label { text-shadow: 0 0 3px var(--color-page), 0 0 3px var(--color-page), 0 0 6px var(--color-page); }
-  /* folder labels sit just off the branch; files on the left of a steep branch read leftward */
-  .tnode.label-below .label, .tnode.label-above .label { position: absolute; left: 27px; }
-  .tnode.label-below .label { top: 19px; }
-  .tnode.label-above .label { top: -7px; }
-  .tnode.flip { flex-direction: row-reverse; translate: -100% 0; }
-  .tnode.label-over .label { position: absolute; left: 16px; top: -15px; translate: -50% 0; }
-  .tnode .open-icon { display: none; }
-  .tnode[aria-expanded='true'] .open-icon { display: block; }
-  .tnode[aria-expanded='true'] .closed-icon { display: none; }
+  .tnode:focus-visible { outline: none; }
+  .tnode:focus-visible .hit { outline: 2px solid var(--color-ink); outline-offset: 3px; }
 </style>
 
 <script>
   type TreeNode = { name: string; kind: 'folder' | 'file'; href?: string; children?: TreeNode[] };
-  type Pt = { x: number; y: number; tx: number; ty: number };
+  type P = { x: number; y: number };
+  type Pt = P & { tx: number; ty: number };
   type Box = { x0: number; x1: number; y0: number; y1: number };
-  // need: how mature the tree must be (0..1) before this pixel shows
-  type Pix = { gx: number; gy: number; s: number; thr: number; moss: boolean; need: number };
   type Kind = 'trunk' | 'folder' | 'file';
+  // A watercolour wash: many slightly different translucent copies of one shape,
+  // in local coordinates around (0, 0). Where they overlap the paint gets denser,
+  // so edges bleed softly and the middle pools, the way real washes do.
+  type Wash = { paths: Path2D[]; color: string; alpha: number; op?: GlobalCompositeOperation };
+  type Twig = { s: number; pts: P[]; bud: number; budColor: string; rot: number };
+  // A painted canopy: a few overlapping, slightly uneven squares filled light-to-deep,
+  // darker blotches where pigment pooled, and a thin wet edge.
+  type Canopy = { layers: Path2D[]; blotches: Path2D[]; edge: Path2D; bleed: Path2D; light: string; deep: string; size: number };
   // One limb per item, like a family tree: each folder is a fork, and everything in it
   // gets its own limb fanning out from that fork.
   type Limb = {
@@ -117,20 +132,22 @@ import { tree } from '../data/tree';
     parent: Limb | null;
     angle: number;
     len: number;
-    w: [number, number];
     samples: { x: number; y: number; s: number }[];
+    edges: { l: P[]; r: P[] }[]; // a few slightly different outlines of the stem, painted on top of each other
     tip: Pt;
-    buckets: Map<string, Pix[]>;
+    twigs: Twig[];
+    crown: Canopy | null; // folders: a big canopy; pages: a small one. Centred on the tip.
+    crownSize: number;
     el: HTMLElement | null;
     box: Box | null;
     kids: Limb[];
     grow: Tween;
-    moss: Tween;
+    focus: Tween;
     dying: boolean;
   };
 
   const root = document.querySelector<HTMLElement>('[data-tree]')!;
-  const canvas = root.querySelector('canvas')!;
+  const [bgCanvas, canvas, grainCanvas] = [...root.querySelectorAll('canvas')];
   const ctx = canvas.getContext('2d')!;
   const world = root.querySelector<HTMLElement>('[data-world]')!;
   const pathEl = document.querySelector<HTMLElement>('[data-path]')!;
@@ -139,9 +156,8 @@ import { tree } from '../data/tree';
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const coarse = matchMedia('(pointer: coarse)').matches;
 
-  const G = 3; // size of one tree pixel, in CSS px
   const UP = -Math.PI / 2;
-  let W = 0, H = 0, S = 1, narrow = false;
+  let W = 0, H = 0, S = 1, narrow = false, DPR = 1;
 
   /* ---------- small helpers ---------- */
   const easeOut = (u: number) => 1 - Math.pow(1 - u, 3);
@@ -180,60 +196,123 @@ import { tree } from '../data/tree';
       return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
   }
+  const gauss = (rnd: () => number) => (rnd() + rnd() + rnd() - 1.5) / 1.5;
 
   const css = getComputedStyle(document.documentElement);
   const C = (name: string) => css.getPropertyValue(`--color-${name}`).trim();
-  const BARK = { light: C('bark-light'), mid: C('bark'), dark: C('bark-dark'), speck: C('bark-speck') };
-  const MOSS = [
-    [C('moss-lime'), 0.34],
-    [C('moss-bright'), 0.22],
-    [C('moss-olive'), 0.18],
-    [C('moss-pale'), 0.14],
-    [C('moss-cream'), 0.12],
-  ] as const;
-  const pickMoss = (r: number) => {
-    let acc = 0;
-    for (const [c, w] of MOSS) { acc += w; if (r < acc) return c; }
-    return MOSS[0][0];
-  };
-  const YOUNG = [C('moss-bright'), C('moss-lime'), C('moss-pale')];
-  const pickYoung = (r: number) => YOUNG[Math.floor(r * YOUNG.length)];
-  const leafFor = (need: number, r: number, r2: number) => (need < 0.35 ? pickYoung(r) : pickMoss(r2));
+  const PAPER = C('paper');
+  const STEM = C('stem'), STEM_DEEP = C('stem-deep');
+  const LEAVES = [C('leaf-sage'), C('leaf-teal'), C('leaf-deep')];
+  const MINT = C('leaf-mint'), ROSE = C('wash-rose'), BUD = C('bud');
 
-  /* ---------- icons ---------- */
-  const ICON = {
-    closed: '<svg class="closed-icon" viewBox="0 0 16 16"><path d="M1.6 3.6a1 1 0 0 1 1-1h3.5l1.4 1.5h5.9a1 1 0 0 1 1 1v6.8a1 1 0 0 1-1 1H2.6a1 1 0 0 1-1-1z"/></svg>',
-    open: '<svg class="open-icon" viewBox="0 0 16 16"><path d="M1.6 12.4V3.6a1 1 0 0 1 1-1h3.5l1.4 1.5h4.9a1 1 0 0 1 1 1v1.4"/><path d="M1.6 12.4l2.1-5.3h11l-2.1 5.3z"/></svg>',
-    file: '<svg viewBox="0 0 16 16"><path d="M3.6 1.6h5.9l2.9 2.9v9.9H3.6z"/><path d="M9.5 1.6v2.9h2.9M5.8 8h4.4M5.8 10.4h4.4"/></svg>',
-  };
+  /* ---------- watercolour washes ---------- */
+  // Push every edge's midpoint out by a random amount, recursively: a shape's outline
+  // gets the irregular, bleeding edge of paint on wet paper.
+  function deform(pts: P[], variance: number, rnd: () => number): P[] {
+    const out: P[] = [];
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i], b = pts[(i + 1) % pts.length];
+      const len = Math.hypot(b.x - a.x, b.y - a.y);
+      const ang = rnd() * Math.PI * 2, d = gauss(rnd) * len * variance;
+      out.push(a, { x: (a.x + b.x) / 2 + Math.cos(ang) * d, y: (a.y + b.y) / 2 + Math.sin(ang) * d });
+    }
+    return out;
+  }
+  // A rounded square (n≈4) or a soft round shape (n≈2), radius r.
+  function blobShape(r: number, n: number, rx = 1, ry = 1, count = 22): P[] {
+    return Array.from({ length: count }, (_, i) => {
+      const a = (i / count) * Math.PI * 2, c = Math.cos(a), s = Math.sin(a);
+      return { x: r * rx * Math.sign(c) * Math.pow(Math.abs(c), 2 / n), y: r * ry * Math.sign(s) * Math.pow(Math.abs(s), 2 / n) };
+    });
+  }
+  function toPath(pts: P[]) {
+    const p = new Path2D();
+    pts.forEach((q, i) => (i ? p.lineTo(q.x, q.y) : p.moveTo(q.x, q.y)));
+    p.closePath();
+    return p;
+  }
+  function wash(shape: P[], color: string, rnd: () => number, layers = 14, alpha = 0.07, v = 0.12): Wash {
+    const base = deform(deform(shape, v * 1.6, rnd), v, rnd);
+    const paths = Array.from({ length: layers }, () => toPath(deform(deform(base, v, rnd), v * 0.8, rnd)));
+    return { paths, color, alpha };
+  }
+  function drawWash(w: Wash, x: number, y: number, scale: number, alpha: number) {
+    if (alpha <= 0.002 || scale <= 0.01) return;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+    ctx.globalAlpha = w.alpha * alpha;
+    ctx.fillStyle = w.color;
+    if (w.op) ctx.globalCompositeOperation = w.op;
+    for (const p of w.paths) ctx.fill(p);
+    ctx.restore();
+  }
 
   /* ---------- sizes ---------- */
   const k = () => lerp(0.72, 1, (S - 0.62) / 0.38);
-  const ageLen = () => 1;
   function sizeFor(kind: Kind, depth: number, center: boolean): { len: number; w: [number, number] } {
     const kk = k();
-    if (kind === 'trunk')
-      return { len: clamp(H * 0.34, 150, 330), w: [22 * kk, 9 * kk] };
-    if (kind === 'folder')
-      return { len: clamp(H * 0.19, 120, 185) * ageLen(), w: (depth === 1 ? [12, 5] : [9, 3.6]).map((v) => v * kk) as [number, number] };
+    if (kind === 'trunk') return { len: clamp(H * 0.34, 150, 330), w: [20 * kk, 8 * kk] };
+    if (kind === 'folder') return { len: clamp(H * 0.19, 120, 185), w: (depth === 1 ? [9, 4] : [7, 3]).map((v) => v * kk) as [number, number] };
     // pages on the sides reach far out, so each level spreads wide like a family tree
     const base = narrow ? (center ? 96 : 118) : (center ? 140 : 215);
-    return {
-      len: base * ageLen(),
-      w: (depth === 1 ? [8, 2.6] : depth === 2 ? [6.5, 2.2] : [5.5, 2]).map((v) => v * kk) as [number, number],
-    };
+    return { len: base, w: (depth === 1 ? [5.5, 2] : [4.5, 1.7]).map((v) => v * kk) as [number, number] };
+  }
+  const canopyFor = (depth: number) => (depth === 1 ? 96 : 82) * k();
+  const leafFor = () => (narrow ? 28 : 34) * k();
+
+  function makeCanopy(size: number, light: string, deep: string, rnd: () => number): Canopy {
+    const sq = blobShape(size / 2, 5.5, 1, 1, 28);
+    // several uneven passes of paint, each a little smaller and shifted, so the edge shows soft bands
+    const layers = Array.from({ length: 6 }, (_, i) => {
+      const sh = { x: gauss(rnd) * 2.2, y: gauss(rnd) * 2.2 }, f = 1 - i * 0.045;
+      return toPath(deform(deform(sq.map((q) => ({ x: q.x * f + sh.x, y: q.y * f + sh.y })), 0.06, rnd), 0.05, rnd));
+    });
+    // pigment pooling in a few places, mostly low in the canopy
+    const blotches = Array.from({ length: 7 }, () => {
+      const r = size * (0.07 + rnd() * 0.16), cx0 = (rnd() - 0.5) * size * 0.6, cy0 = (rnd() - 0.1) * size * 0.55;
+      return toPath(deform(deform(blobShape(r, 2, 1, 0.8, 12).map((q) => ({ x: q.x + cx0, y: q.y + cy0 })), 0.22, rnd), 0.15, rnd));
+    });
+    const edge = toPath(deform(deform(sq, 0.05, rnd), 0.04, rnd)); // the darker line where a wash dries
+    const bleed = toPath(deform(deform(sq.map((q) => ({ x: q.x * 1.07, y: q.y * 1.07 })), 0.1, rnd), 0.08, rnd)); // paint creeping into the paper
+    return { layers, blotches, edge, bleed, light, deep, size };
+  }
+
+  function drawCanopy(c: Canopy, x: number, y: number, scale: number, alpha: number) {
+    if (alpha <= 0.002 || scale <= 0.01) return;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+    const h = c.size / 2;
+    const g = ctx.createLinearGradient(0, -h, 0, h);
+    g.addColorStop(0, c.light);
+    g.addColorStop(1, c.deep);
+    ctx.fillStyle = c.light;
+    ctx.globalAlpha = 0.09 * alpha;
+    ctx.fill(c.bleed);
+    ctx.fillStyle = g;
+    ctx.globalAlpha = 0.2 * alpha;
+    for (const p of c.layers) ctx.fill(p);
+    ctx.fillStyle = c.deep;
+    ctx.globalAlpha = 0.13 * alpha;
+    for (const p of c.blotches) ctx.fill(p);
+    ctx.strokeStyle = c.deep;
+    ctx.lineWidth = 1.6 / scale;
+    ctx.globalAlpha = 0.2 * alpha;
+    ctx.stroke(c.edge);
+    ctx.restore();
   }
 
   /* ---------- geometry ---------- */
   function makeLimb(node: TreeNode, kind: Kind, depth: number, key: string, parent: Limb | null,
-                    anchor: { x: number; y: number }, angle: number, center: boolean): Limb {
+                    anchor: P, angle: number, center: boolean): Limb {
     const rnd = rngFrom(hash(key));
     const { len, w } = sizeFor(kind, depth, center);
     const dir = (a: number) => ({ x: Math.cos(a), y: Math.sin(a) });
-    // Limbs that lean out to the side leave flatter and curl upward, like real branches.
-    // Limbs that grow up the middle get a gentle S.
+    // Limbs that lean out to the side leave flatter and curl upward; limbs up the middle
+    // get a gentle S.
     const side = Math.abs(Math.cos(angle)) > 0.25;
-    const b1 = side ? Math.sign(Math.cos(angle)) * 0.34 : (rnd() - 0.5) * 0.3;
+    const b1 = side ? Math.sign(Math.cos(angle)) * 0.36 : (rnd() - 0.5) * 0.3;
     const b2 = side ? -b1 : b1;
     const P0 = anchor;
     const P3 = { x: P0.x + len * Math.cos(angle), y: P0.y + len * Math.sin(angle) };
@@ -241,8 +320,10 @@ import { tree } from '../data/tree';
     const P1 = { x: P0.x + len * 0.38 * d1.x, y: P0.y + len * 0.38 * d1.y };
     const P2 = { x: P3.x - len * 0.38 * d2.x, y: P3.y - len * 0.38 * d2.y };
 
-    // the curve, then a gentle wave across it so limbs look grown, not drawn
-    const N = 220;
+    const N = 160;
+    const samples: { x: number; y: number; s: number }[] = [];
+    let s = 0;
+    const amp = clamp(len * 0.02, 1.5, 8), freq = 1.2 + rnd(), phase = rnd() * Math.PI * 2;
     const base = Array.from({ length: N + 1 }, (_, i) => {
       const t = i / N, m = 1 - t;
       return {
@@ -250,29 +331,70 @@ import { tree } from '../data/tree';
         y: m * m * m * P0.y + 3 * m * m * t * P1.y + 3 * m * t * t * P2.y + t * t * t * P3.y,
       };
     });
-    const amp = clamp(len * 0.03, 2.5, 14), freq = 1.4 + rnd() * 1.2, phase = rnd() * Math.PI * 2;
-    const samples: { x: number; y: number; s: number }[] = [];
-    let s = 0;
     base.forEach((p, i) => {
       const a = base[Math.max(0, i - 1)], c = base[Math.min(N, i + 1)];
-      const dl = Math.hypot(c.x - a.x, c.y - a.y) || 1;
-      const t = i / N;
-      const off = Math.sin(t * Math.PI * freq + phase) * amp * Math.pow(Math.sin(Math.PI * t), 0.7);
+      const dl = Math.hypot(c.x - a.x, c.y - a.y) || 1, t = i / N;
+      const off = Math.sin(t * Math.PI * freq + phase) * amp * Math.sin(Math.PI * t);
       const x = p.x - ((c.y - a.y) / dl) * off, y = p.y + ((c.x - a.x) / dl) * off;
       if (samples.length) { const q = samples[samples.length - 1]; s += Math.hypot(x - q.x, y - q.y); }
       samples.push({ x, y, s });
     });
+
     const limb: Limb = {
-      node, kind, depth, key, parent, angle, len: s, w, samples, tip: { x: 0, y: 0, tx: 0, ty: -1 },
-      buckets: new Map(), el: null, box: null, kids: [],
-      grow: new Tween(0), moss: new Tween(1), dying: false,
+      node, kind, depth, key, parent, angle, len: s, samples, edges: [], tip: { x: 0, y: 0, tx: 0, ty: -1 },
+      twigs: [], crown: null, crownSize: 0, el: null, box: null, kids: [],
+      grow: new Tween(0), focus: new Tween(1), dying: false,
     };
     limb.tip = at(limb, limb.len);
-    buildPixels(limb, rnd);
+
+    // The stem: three outlines of slightly different widths, each with its own gentle wobble.
+    // Painted over each other at low opacity they give a soft edge and a denser core.
+    const kk = k();
+    for (const wf of [1.12, 1, 0.78]) {
+      const ph = rnd() * 10, l: P[] = [], r: P[] = [];
+      samples.forEach((q, i) => {
+        const t = q.s / limb.len;
+        const p = at(limb, q.s);
+        const flare = kind === 'trunk' ? 16 * kk * Math.pow(Math.max(0, 1 - t / 0.12), 2) : 0;
+        const ww = (lerp(w[0], w[1], Math.pow(t, 0.8)) + flare) * wf * (1 + 0.08 * Math.sin(i * 0.21 + ph));
+        const nx = -p.ty, ny = p.tx;
+        l.push({ x: q.x + nx * ww / 2, y: q.y + ny * ww / 2 });
+        r.push({ x: q.x - nx * ww / 2, y: q.y - ny * ww / 2 });
+      });
+      limb.edges.push({ l, r });
+    }
+
+    // Candelabra twigs: a short stem out to the side that turns up and ends in a square bud.
+    const twigCount = kind === 'trunk' ? 2 : kind === 'folder' ? 2 : 1 + Math.floor(rnd() * 2);
+    for (let i = 0; i < twigCount; i++) {
+      const st = (0.3 + rnd() * 0.5) * limb.len;
+      const p = at(limb, st);
+      const sideSign = rnd() < 0.5 ? -1 : 1;
+      const out = (7 + rnd() * 10) * kk, up = (12 + rnd() * 18) * kk;
+      const nx = -p.ty * sideSign, ny = p.tx * sideSign;
+      const a = { x: p.x, y: p.y }, b = { x: p.x + nx * out, y: p.y + ny * out };
+      const pts: P[] = [];
+      for (let j = 0; j <= 8; j++) { // the elbow, out then up
+        const t = j / 8, e = t * t;
+        pts.push({ x: lerp(a.x, b.x, Math.sqrt(t)), y: lerp(a.y, b.y, t) - up * e });
+      }
+      limb.twigs.push({ s: st, pts, bud: (5 + rnd() * 3) * kk, budColor: rnd() < 0.5 ? BUD : LEAVES[2], rot: (rnd() - 0.5) * 0.3 });
+    }
+
+    // Folders bloom into a big canopy; pages end in a small one.
+    if (kind !== 'trunk') {
+      const size = kind === 'folder' ? canopyFor(depth) : leafFor();
+      const pick = hash(key) % 3;
+      const [light, deep] = kind === 'folder'
+        ? (pick === 0 ? [MINT, LEAVES[1]] : pick === 1 ? [LEAVES[0], LEAVES[2]] : [MINT, LEAVES[2]])
+        : (pick === 0 ? [LEAVES[0], LEAVES[1]] : pick === 1 ? [MINT, LEAVES[1]] : [LEAVES[0], LEAVES[2]]);
+      limb.crown = makeCanopy(size, light, deep, rnd);
+      limb.crownSize = size;
+    }
     return limb;
   }
 
-  function at(b: Limb, s: number): Pt {
+  function at(b: { samples: { x: number; y: number; s: number }[] }, s: number): Pt {
     const sm = b.samples;
     let lo = 0, hi = sm.length - 1;
     while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (sm[mid].s < s) lo = mid; else hi = mid; }
@@ -282,112 +404,10 @@ import { tree } from '../data/tree';
     return { x: lerp(a.x, c.x, u), y: lerp(a.y, c.y, u), tx: dx / dl, ty: dy / dl };
   }
 
-  /* ---------- pixels: bark core, moss clumps, twigs, leafy tips ---------- */
-  // Every limb is a full-grown, mossy limb: thick bark, moss clumps, leafy clumps,
-  // twigs and a leafy crown at the tip.
-  function buildPixels(b: Limb, rnd: () => number) {
-    const cells = new Map<string, { color: string; p: Pix }>();
-    const put = (x: number, y: number, color: string, s: number, moss: boolean, thr: number, need: number) => {
-      const gx = Math.round(x / G), gy = Math.round(y / G), key = gx + ',' + gy;
-      const had = cells.get(key);
-      if (had) {
-        if (!had.p.moss && moss) return; // bark wins over moss
-        if (had.p.moss === moss && had.p.need <= need) return; // the earlier-appearing pixel wins
-      }
-      cells.set(key, { color, p: { gx, gy, s, thr, moss, need } });
-    };
-
-    const kk = k();
-    const [w0, w1] = b.w;
-    const thin = 0.24; // fraction of full width a sapling has
-    const widthAt = (need: number) => lerp(thin, 1, need);
-    const clumps = Array.from({ length: Math.ceil(b.len / 38) + 2 }, () => rnd());
-    const clump = (s: number) => {
-      const i = Math.floor(s / 38), f = s / 38 - i, u = f * f * (3 - 2 * f);
-      return lerp(clumps[i], clumps[i + 1], u);
-    };
-
-    for (let s = 0; s <= b.len; s += 1.5) {
-      const t = s / b.len;
-      const p = at(b, s);
-      const nx = -p.ty, ny = p.tx; // normal
-      // the trunk flares where it meets the soil once it's old
-      const flare = b.kind === 'trunk' ? 14 * kk * Math.pow(Math.max(0, 1 - t / 0.1), 2) : 0;
-      const w = lerp(w0, w1, t) + flare;
-
-      // bark: dark on the shaded side, light edge, grey middle, the odd red speck
-      const shadeSide = nx > 0 ? 1 : -1; // the side facing right/down sits in shadow
-      for (let kx = -w / 2; kx <= w / 2; kx += 1.4) {
-        const need = clamp((Math.abs(kx) * 2 / w - thin) / (1 - thin), 0, 1);
-        const r = rnd();
-        let c = r < 0.55 ? BARK.mid : r < 0.8 ? BARK.light : BARK.dark;
-        if (kx * shadeSide > 0 && rnd() < 0.25 + 0.6 * (Math.abs(kx) / (w / 2))) c = BARK.dark;
-        if (rnd() < 0.008) c = BARK.speck;
-        put(p.x + nx * kx, p.y + ny * kx, c, s, false, 0, need);
-      }
-
-      // moss: clumps that sit mostly on the upper side, thinning toward the tip. Old trees carry far more.
-      const up = ny < 0 ? 1 : -1; // which normal direction points up the screen
-      const m = clamp((clump(s) - 0.24) / 0.5, 0, 1);
-      const count = Math.floor(m * 9 * (1 - t * 0.5) * (w0 / 14 + 0.4) + rnd() * 1.4);
-      const R = lerp(w0 * 1.6 + 8, 4, t);
-      for (let i = 0; i < count; i++) {
-        const need = clamp(Math.pow(rnd(), 0.85) * 1.12 - 0.1, 0, 1);
-        const sgn = rnd() < 0.72 ? up : -up;
-        const off = sgn * ((w / 2) * widthAt(need) - 1 + Math.pow(rnd(), 1.15) * R * lerp(0.45, 1, need));
-        const along = (rnd() - 0.5) * 5;
-        put(p.x + nx * off + p.tx * along, p.y + ny * off + p.ty * along,
-          leafFor(need, rnd(), rnd()), s + 8 + rnd() * 42, true, rnd(), need);
-      }
-
-      // foliage: leafy clumps along older limbs
-      if (b.kind !== 'trunk' && t > 0.2 && rnd() < 0.02) {
-        const need = 0.45 + rnd() * 0.55;
-        const rr = (6 + rnd() * 8) * kk;
-        const cxl = p.x + nx * up * (w / 2 + rr * 0.7), cyl = p.y + ny * up * (w / 2 + rr * 0.7);
-        for (let q = 0; q < rr * rr * 0.9; q++) {
-          const a = rnd() * Math.PI * 2, r = Math.sqrt(rnd()) * rr;
-          put(cxl + Math.cos(a) * r, cyl + Math.sin(a) * r * 0.8, pickMoss(rnd()), s + 20 + r, true, rnd(),
-            Math.min(1, need + (r / rr) * 0.2));
-        }
-      }
-
-      // twigs: thin single-pixel offshoots that come with age
-      if (t > 0.1 && t < 0.88 && rnd() < 0.026) {
-        const need = 0.25 + rnd() * 0.75;
-        const a = Math.atan2(p.ty, p.tx) + (rnd() < 0.5 ? -1 : 1) * (0.5 + rnd() * 0.6);
-        const tl = (8 + rnd() * 20) * S;
-        for (let j = 0; j < tl; j += 2) {
-          if (rnd() < 0.85) put(p.x + Math.cos(a) * j, p.y + Math.sin(a) * j, BARK.light, s + j, false, 0, need);
-        }
-        for (let q = 0; q < 5; q++)
-          put(p.x + Math.cos(a) * tl + (rnd() - 0.5) * 8, p.y + Math.sin(a) * tl + (rnd() - 0.5) * 8,
-            pickMoss(rnd()), s + tl + 20, true, rnd() * 0.8, Math.min(1, need + 0.1));
-      }
-    }
-
-    // a leafy tuft at every tip but the trunk's: a few fresh leaves on a sapling, a full crown when old
-    if (b.kind !== 'trunk') {
-      const tip = at(b, b.len);
-      const Rt = (b.kind === 'folder' ? 26 : 20) * kk;
-      for (let i = 0; i < Rt * Rt * 0.55; i++) {
-        const a = rnd() * Math.PI * 2, r = Math.pow(rnd(), 0.7) * Rt;
-        const need = clamp((r / Rt) * 0.95 - 0.12 + rnd() * 0.12, 0, 1);
-        put(tip.x + Math.cos(a) * r, tip.y + Math.sin(a) * r * 0.8 - 3,
-          leafFor(need, rnd(), rnd()), b.len * (1 - 0.03 * (1 - r / Rt)), true, rnd() * 0.9, need);
-      }
-    }
-
-    for (const { color, p } of cells.values()) {
-      if (!b.buckets.has(color)) b.buckets.set(color, []);
-      b.buckets.get(color)!.push(p);
-    }
-  }
-
   /* ---------- the family-tree fan ---------- */
   const limbs: Limb[] = []; // everything drawn, including limbs pulling back in
   const open: Limb[] = []; // open folders: trunk first, deepest last
-  const placed: Box[] = []; // label boxes, so labels avoid each other
+  const placed: Box[] = []; // labels and canopies, so labels avoid them
   const cam = { x: new Tween(0), y: new Tween(0) };
   let planted = false;
 
@@ -400,8 +420,7 @@ import { tree } from '../data/tree';
     if (n === 1) slots = [0];
     else if (n === 2 && kids.some((c) => c.kind === 'folder')) slots = [0, (depth % 2 ? -1 : 1) * spread];
     else slots = Array.from({ length: n }, (_, i) => lerp(-spread, spread, i / (n - 1)));
-    // folders first into the slots nearest the middle, then pages outward
-    const order = kids.map((c, i) => i).sort((a, b) =>
+    const order = kids.map((_, i) => i).sort((a, b) =>
       (kids[a].kind === 'folder' ? 0 : 1) - (kids[b].kind === 'folder' ? 0 : 1) || a - b);
     const bySlot = [...slots].sort((a, b) => Math.abs(a) - Math.abs(b) || a - b);
     const out: number[] = [];
@@ -414,15 +433,16 @@ import { tree } from '../data/tree';
     const slots = fanFor(kids, f.depth);
     const tipAngle = Math.atan2(f.tip.ty, f.tip.tx);
     const base = lerp(UP, tipAngle, 0.3);
-    const made: Limb[] = kids.map((node, i) => {
-      const kind: Kind = node.kind === 'folder' ? 'folder' : 'file';
-      const limb = makeLimb(node, kind, f.depth + 1, `${f.key}/${node.name}`, f,
-        { x: f.tip.x, y: f.tip.y }, base + slots[i], Math.abs(slots[i]) < 0.2);
-      return limb;
-    });
+    const made = kids.map((node, i) =>
+      makeLimb(node, node.kind === 'folder' ? 'folder' : 'file', f.depth + 1, `${f.key}/${node.name}`, f,
+        { x: f.tip.x, y: f.tip.y }, base + slots[i], Math.abs(slots[i]) < 0.2));
     f.kids = made;
     limbs.push(...made);
-    // labels go on once every sibling limb exists, so they can steer clear of all of them
+    // canopies first, so labels can steer around them
+    for (const l of made) {
+      const h = l.crownSize / 2;
+      if (h) placed.push({ x0: l.tip.x - h, x1: l.tip.x + h, y0: l.tip.y - h, y1: l.tip.y + h });
+    }
     made
       .map((l, i) => ({ l, slot: slots[i] }))
       .sort((a, b) => a.slot - b.slot) // left to right, which is also the Tab order
@@ -436,9 +456,13 @@ import { tree } from '../data/tree';
 
   function growTime(b: Limb) { return 0.5 + b.len / 1600; }
 
-  // Does a label box sit on any limb, or on another label?
-  function blocked(r: Box) {
-    for (const q of placed) if (r.x0 < q.x1 && r.x1 > q.x0 && r.y0 < q.y1 && r.y1 > q.y0) return true;
+  // Does a label box sit on any stem, or on another label or canopy?
+  function blocked(r: Box, self: Limb) {
+    const selfCrown = placed.find((q) => q.x0 === self.tip.x - self.crownSize / 2 && q.y0 === self.tip.y - self.crownSize / 2);
+    for (const q of placed) {
+      if (q === selfCrown) continue;
+      if (r.x0 < q.x1 && r.x1 > q.x0 && r.y0 < q.y1 && r.y1 > q.y0) return true;
+    }
     for (const l of limbs) {
       if (l.dying) continue;
       const sm = l.samples;
@@ -454,31 +478,37 @@ import { tree } from '../data/tree';
     const isFolder = l.kind === 'folder';
     const el = document.createElement(isFolder ? 'button' : 'a');
     el.className = 'tnode';
-    el.innerHTML = (isFolder ? ICON.closed + ICON.open : ICON.file) +
-      `<span class="label">${l.node.name}${isFolder ? '/' : ''}</span>`;
+    const text = `${l.node.name}${isFolder ? '/' : ''}`;
+    const lw = text.length * 6.7 + 6;
     const { x, y } = l.tip;
-    const lw = (l.node.name.length + (isFolder ? 1 : 0)) * 6.7 + 4;
-    const right: Box = { x0: x + 10, x1: x + 14 + lw, y0: y - 8, y1: y + 8 };
-    const left: Box = { x0: x - 14 - lw, x1: x - 10, y0: y - 8, y1: y + 8 };
-    const below: Box = { x0: x + 18, x1: x + 22 + lw, y0: y + 9, y1: y + 23 };
-    const above: Box = { x0: x + 18, x1: x + 22 + lw, y0: y - 17, y1: y - 3 };
-    const over: Box = { x0: x - lw / 2 - 2, x1: x + lw / 2 + 2, y0: y - 30, y1: y - 13 }; // centred above the icon
-    // Folders keep their label below, out of the way of the limbs they'll grow.
-    // Pages read outward: label right on the right side, left on the left.
-    // On phones, pages out on the sides put their label above the icon so it can't run off the screen.
-    const leansLeft = Math.cos(l.angle) < -0.2, onSide = Math.abs(Math.cos(l.angle)) > 0.2;
-    const outward: [string, Box][] = leansLeft ? [['flip', left], ['', right]] : [['', right], ['flip', left]];
-    const tries: [string, Box][] = isFolder
-      ? [['label-below', below], ['label-above', above], ['', right], ['flip', left]]
-      : narrow && onSide ? [['label-over', over], ...outward] : [...outward, ['label-over', over], ['label-below', below]];
-    const pick = tries.find(([, b]) => !blocked(b)) ?? tries[0];
-    if (pick[0]) el.classList.add(pick[0]);
-    l.box = pick[1];
-    placed.push(pick[1]);
+    // offsets of the label's anchor from the tip, and how it reads from there
+    const h = l.crownSize / 2 + (isFolder ? 0 : 2);
+    type Spot = { cls: string; dx: number; dy: number; box: Box };
+    const spot = (cls: string, dx: number, dy: number): Spot => {
+      const x0 = cls === 'read-left' ? x + dx - lw : cls === 'read-centre' ? x + dx - lw / 2 : x + dx;
+      return { cls, dx, dy, box: { x0, x1: x0 + lw, y0: y + dy - 8, y1: y + dy + 8 } };
+    };
+    const right = spot('', h + 6, isFolder ? h * 0.55 : 0);
+    const left = spot('read-left', -h - 6, isFolder ? h * 0.55 : 0);
+    const over = spot('read-centre', 0, -h - 10);
+    const under = spot('read-centre', 0, h + 10);
+    // Folders: beside the lower corner of the canopy, clear of the stem below and the limbs above.
+    // Pages read outward; on phones every page label sits above its canopy so none run off screen.
+    const leansLeft = Math.cos(l.angle) < -0.2;
+    const outward = leansLeft ? [left, right] : [right, left];
+    const tries: Spot[] = isFolder
+      ? [right, left, under]
+      : narrow ? [over, ...outward, under] : [...outward, over, under];
+    const pick = tries.find((t) => !blocked(t.box, l)) ?? tries[0];
+    if (pick.cls) el.classList.add(pick.cls);
+    l.box = pick.box;
+    placed.push(pick.box);
 
-    const flip = pick[0] === 'flip';
-    el.style.left = `${Math.round(flip ? x + 24 : x - 8)}px`;
-    el.style.top = `${Math.round(y - 8)}px`;
+    const hitSize = isFolder ? l.crownSize * 0.8 : 30;
+    el.innerHTML = `<span class="hit" style="width:${hitSize}px;height:${hitSize}px"></span>` +
+      `<span class="label" style="left:${Math.round(pick.dx)}px;top:${Math.round(pick.dy)}px">${text}</span>`;
+    el.style.left = `${Math.round(x)}px`;
+    el.style.top = `${Math.round(y)}px`;
     el.tabIndex = -1;
     if (isFolder) {
       el.setAttribute('type', 'button');
@@ -508,7 +538,11 @@ import { tree } from '../data/tree';
       for (const kid of f.kids) {
         kid.dying = true;
         kid.grow.go(0, 0.4, easeIn);
-        if (kid.box) placed.splice(placed.indexOf(kid.box), 1);
+        for (let i = placed.length - 1; i >= 0; i--) {
+          const q = placed[i];
+          const isCrown = q.x0 === kid.tip.x - kid.crownSize / 2 && q.y0 === kid.tip.y - kid.crownSize / 2;
+          if (q === kid.box || isCrown) placed.splice(i, 1);
+        }
         if (kid.el) { kid.el.tabIndex = -1; kid.el.classList.remove('shown'); }
       }
       f.kids = [];
@@ -521,14 +555,14 @@ import { tree } from '../data/tree';
     else { closeBelow(i - 1); refocus(); }
   }
 
-  // The newest level is in focus; levels below it thin out, as in the reference.
+  // The newest level is in focus; levels below it fade back.
   function refocus(instant = false) {
     const deepest = open[open.length - 1];
     for (const l of limbs) {
       if (l.dying) continue;
-      const active = l.parent === deepest || l === deepest;
-      const target = active ? 1 : 0.42;
-      instant ? l.moss.set(target) : l.moss.go(target, 0.5);
+      const active = l.parent === deepest || l === deepest || (deepest.kind === 'trunk' && l.kind === 'trunk');
+      const target = active ? 1 : 0.5;
+      instant ? l.focus.set(target) : l.focus.go(target, 0.5);
       l.el?.classList.toggle('dim', !active && l.el.getAttribute('aria-expanded') !== 'true');
     }
     frame(deepest, instant);
@@ -540,21 +574,26 @@ import { tree } from '../data/tree';
   function frame(f: Limb, instant = false) {
     let tx: number, ty: number;
     if (!planted) {
-      tx = -W / 2; ty = -(H * 0.62); // just the pot, a little below centre
+      tx = -W / 2; ty = -(H * 0.6); // just the pot, a little below centre
     } else {
       // fit the open folder's fork and everything growing from it
       let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-      const fit = (x0: number, y0: number, x1: number, y1: number) => {
-        minX = Math.min(minX, x0); minY = Math.min(minY, y0); maxX = Math.max(maxX, x1); maxY = Math.max(maxY, y1);
+      const fit = (b: Box) => {
+        minX = Math.min(minX, b.x0); minY = Math.min(minY, b.y0); maxX = Math.max(maxX, b.x1); maxY = Math.max(maxY, b.y1);
       };
-      const grp = f.kind === 'trunk' ? [f, ...f.kids] : [...f.kids];
-      fit(f.tip.x - 30, f.tip.y - 10, f.tip.x + 30, f.tip.y + 40);
+      const grp = f.kind === 'trunk' ? [f, ...f.kids] : [f, ...f.kids];
       for (const l of grp) {
-        for (const p of l.samples) fit(p.x, p.y, p.x, p.y);
-        if (l.kind !== 'trunk') fit(l.tip.x - 30, l.tip.y - 30, l.tip.x + 30, l.tip.y + 20);
-        if (l.box) fit(l.box.x0, l.box.y0, l.box.x1, l.box.y1);
+        for (const p of l.samples) fit({ x0: p.x, y0: p.y, x1: p.x, y1: p.y });
+        const h = l.crownSize / 2 + 6;
+        if (h > 6) fit({ x0: l.tip.x - h, y0: l.tip.y - h, x1: l.tip.x + h, y1: l.tip.y + h });
+        if (l.box) fit(l.box);
       }
-      if (f.kind === 'trunk') fit(-14 * PG, 0, 14 * PG, potBottom() + 8);
+      if (f.kind === 'trunk') fit({ x0: -70, y0: 0, x1: 70, y1: POT_BOTTOM + 10 });
+      else { // only the top of the folder's own limb: the fork, not the whole stem below it
+        minY = Math.min(minY, f.tip.y - f.crownSize / 2);
+        const keepBelow = f.tip.y + f.crownSize / 2 + 30;
+        maxY = Math.max(Math.min(maxY, Math.max(keepBelow, ...f.kids.map((l) => (l.box ? l.box.y1 : l.tip.y)))), keepBelow);
+      }
       const pad = W < 700 ? 16 : 72, top = headerSpace(), bottom = 56;
       const vw = W - pad * 2, vh = H - top - bottom;
       tx = maxX - minX <= vw ? (minX + maxX) / 2 - W / 2 : minX - pad;
@@ -590,36 +629,78 @@ import { tree } from '../data/tree';
 
   function draw(now: number) {
     raf = 0;
-    let busy = cam.x.tick(now) | cam.y.tick(now) | potLift.tick(now) ? true : false;
-    for (const l of limbs) busy = l.grow.tick(now) || l.moss.tick(now) || busy;
+    let busy = cam.x.tick(now) | cam.y.tick(now) | potLift.tick(now) | sprout.tick(now) ? true : false;
+    for (const l of limbs) busy = l.grow.tick(now) || l.focus.tick(now) || busy;
 
     const cx = Math.round(cam.x.v), cy = Math.round(cam.y.v);
     world.style.transform = `translate(${-cx}px, ${-cy}px)`;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     ctx.clearRect(0, 0, W, H);
 
     for (let i = limbs.length - 1; i >= 0; i--) {
       const l = limbs[i];
       if (l.dying && l.grow.v <= 0) { l.el?.remove(); limbs.splice(i, 1); }
     }
-    for (const l of limbs) paint(l, cx, cy);
+    // stems first, then canopies and buds over them, so limbs read as passing behind the paint
+    ctx.globalCompositeOperation = 'multiply';
+    for (const l of limbs) paintStem(l, cx, cy);
+    for (const l of limbs) paintCrown(l, cx, cy);
+    ctx.globalCompositeOperation = 'source-over';
     paintPot(cx, cy);
 
     if (busy) wake();
   }
 
-  function paint(l: Limb, cx: number, cy: number) {
+  const fadeOf = (l: Limb) => l.focus.v * (l.dying ? Math.min(1, l.grow.v * 1.5) : 1);
+
+  function paintStem(l: Limb, cx: number, cy: number) {
     const reach = l.grow.v * l.len;
-    const moss = l.moss.v * (l.dying ? l.grow.v : 1);
-    for (const [color, pix] of l.buckets) {
-      ctx.fillStyle = color;
-      for (const p of pix) {
-        if (p.s > reach) continue;
-        if (p.moss && p.thr > moss) continue;
-        const x = p.gx * G - cx, y = p.gy * G - cy;
-        if (x < -G || y < -G || x > W || y > H) continue;
-        ctx.fillRect(x, y, G, G);
+    if (reach <= 0.5) return;
+    const sm = l.samples;
+    let end = 0;
+    while (end < sm.length - 1 && sm[end + 1].s <= reach) end++;
+    const fade = fadeOf(l);
+    const tipPt = at(l, reach);
+    // each outline painted at low opacity; overlaps make the core denser
+    l.edges.forEach((e, i) => {
+      const p = new Path2D();
+      p.moveTo(e.l[0].x - cx, e.l[0].y - cy);
+      for (let j = 1; j <= end; j++) p.lineTo(e.l[j].x - cx, e.l[j].y - cy);
+      p.lineTo(tipPt.x + tipPt.tx * 2 - cx, tipPt.y + tipPt.ty * 2 - cy); // a soft point at the growing tip
+      for (let j = end; j >= 0; j--) p.lineTo(e.r[j].x - cx, e.r[j].y - cy);
+      p.closePath();
+      ctx.globalAlpha = (i === 2 ? 0.38 : 0.3) * fade;
+      ctx.fillStyle = i === 2 ? STEM_DEEP : STEM;
+      ctx.fill(p);
+    });
+    // twigs grow out once the stem has passed them
+    for (const t of l.twigs) {
+      const g = clamp((reach - t.s) / 40, 0, 1);
+      if (g <= 0) continue;
+      const n = Math.max(2, Math.round(t.pts.length * g));
+      ctx.globalAlpha = 0.7 * fade;
+      ctx.strokeStyle = STEM;
+      ctx.lineWidth = 1.8;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      t.pts.slice(0, n).forEach((q, i) => (i ? ctx.lineTo(q.x - cx, q.y - cy) : ctx.moveTo(q.x - cx, q.y - cy)));
+      ctx.stroke();
+      if (g >= 1) {
+        const e = t.pts[t.pts.length - 1];
+        ctx.save();
+        ctx.translate(e.x - cx, e.y - cy - t.bud / 2);
+        ctx.rotate(t.rot);
+        ctx.globalAlpha = 0.75 * fade;
+        ctx.fillStyle = t.budColor;
+        ctx.fillRect(-t.bud / 2, -t.bud / 2, t.bud, t.bud);
+        ctx.restore();
       }
     }
+  }
+
+  // Canopies and buds bloom open as the limb arrives: they swell from about half size.
+  function paintCrown(l: Limb, cx: number, cy: number) {
+    // labels come in as the limb arrives
     if (l.el && !l.dying) {
       const shown = l.grow.v > 0.88;
       if (shown !== l.el.classList.contains('shown')) {
@@ -627,51 +708,74 @@ import { tree } from '../data/tree';
         l.el.tabIndex = shown ? 0 : -1;
       }
     }
+    if (!l.crown) return;
+    const bloom = clamp((l.grow.v - 0.72) / 0.28, 0, 1);
+    if (bloom <= 0) return;
+    drawCanopy(l.crown, l.tip.x - cx, l.tip.y - cy, lerp(0.5, 1, easeOut(bloom)), fadeOf(l) * bloom);
   }
 
   /* ---------- the pot ---------- */
-  // Pixel art in grid cells, origin at the centre of the soil. y grows downward.
-  let PG = 3; // the pot's pixel size: a touch chunkier on big screens, where it's alone on the page
-  const potBottom = () => 21 * PG;
-  const POT = {
-    light: C('pot-light'), mid: C('pot'), shade: C('pot-shade'), line: C('pot-line'), soil: C('soil'),
-  };
-  const potPixels: [number, number, string][] = [];
-  (() => {
-    const rnd = rngFrom(hash('pot'));
-    const fill = (x: number, y: number, hw: number) => {
-      const u = (x + hw) / (2 * hw), d = (x + y) & 1;
-      if (u < 0.22 || (u < 0.3 && d)) return POT.light;
-      if (u > 0.74 || (u > 0.66 && d)) return POT.shade;
-      return POT.mid;
-    };
-    for (let x = -11; x <= 11; x++) potPixels.push([x, -1, POT.line]); // back lip
-    for (let x = -12; x <= 12; x++) // soil, with a few moss specks
-      potPixels.push([x, 0, Math.abs(x) === 12 ? POT.line : rnd() < 0.12 ? pickMoss(rnd()) : POT.soil]);
-    for (let y = 1; y <= 4; y++) for (let x = -13; x <= 13; x++)
-      potPixels.push([x, y, y === 1 || y === 4 || Math.abs(x) === 13 ? POT.line : fill(x, y, 13)]);
-    for (let y = 5; y <= 20; y++) {
-      const hw = Math.round(lerp(11, 8, (y - 5) / 15));
-      for (let x = -hw; x <= hw; x++) potPixels.push([x, y, Math.abs(x) === hw ? POT.line : fill(x, y, hw)]);
-    }
-    for (let x = -8; x <= 8; x++) potPixels.push([x, 21, POT.line]);
-  })();
-  // A sprout waits in the soil until the pot is clicked; it perks up on hover.
-  const SPROUT: [number, number, number][] = [
-    [0, -1, 2], [0, -2, 2], [0, -3, 2], [-1, -3, 0], [-2, -4, 0], [1, -4, 1], [2, -5, 1], [-1, -4, 3],
-  ];
-  const SPROUT_HOVER: [number, number, number][] = [[0, -4, 2], [0, -5, 0], [-1, -6, 1], [1, -6, 4], [-3, -5, 0], [3, -6, 1]];
+  // A painted terracotta pot, origin at the middle of the soil. y grows downward.
+  const POT_BOTTOM = 92;
   const potLift = new Tween(0);
-  let potHover = false;
+  const sprout = new Tween(0); // 0 resting, 1 perked up on hover
+  let potWashes: { w: Wash; x: number; y: number }[] = [];
+  let sproutLeaves: { w: Wash; x: number; y: number; rot: number; grow: number }[] = [];
+  function buildPot() {
+    const rnd = rngFrom(hash('pot'));
+    const terra = C('pot'), light = C('pot-light'), shade = C('pot-shade'), line = C('pot-line'), soil = C('soil');
+    const trap = (x0: number, x1: number, x2: number, x3: number, y0: number, y1: number): P[] => {
+      const pts: P[] = [];
+      const edge = (a: P, b: P) => { for (let i = 0; i < 6; i++) pts.push({ x: lerp(a.x, b.x, i / 6), y: lerp(a.y, b.y, i / 6) }); };
+      edge({ x: x0, y: y0 }, { x: x1, y: y0 }); edge({ x: x1, y: y0 }, { x: x2, y: y1 });
+      edge({ x: x2, y: y1 }, { x: x3, y: y1 }); edge({ x: x3, y: y1 }, { x: x0, y: y0 });
+      return pts;
+    };
+    potWashes = [
+      { w: wash(blobShape(78, 2, 1, 0.13), ROSE, rnd, 10, 0.06, 0.1), x: 0, y: POT_BOTTOM + 2 }, // shadow on the paper
+      { w: wash(trap(-44, 44, 32, -32, 18, POT_BOTTOM), terra, rnd, 14, 0.09, 0.05), x: 0, y: 0 }, // body
+      { w: wash(trap(10, 44, 32, 6, 20, POT_BOTTOM), shade, rnd, 10, 0.07, 0.04), x: 0, y: 0 }, // shaded side
+      { w: wash(trap(-40, -24, -22, -30, 22, POT_BOTTOM - 4), light, rnd, 8, 0.07, 0.05), x: 0, y: 0 }, // light side
+      { w: wash(trap(-52, 52, 50, -50, 0, 20), terra, rnd, 14, 0.1, 0.035), x: 0, y: 0 }, // rim
+      { w: wash(trap(16, 52, 50, 14, 2, 20), shade, rnd, 8, 0.07, 0.03), x: 0, y: 0 },
+      { w: wash(blobShape(46, 2, 1, 0.12), soil, rnd, 10, 0.12, 0.05), x: 0, y: 2 }, // soil
+      { w: wash(trap(-52, 52, 50, -50, 19, 22), line, rnd, 6, 0.08, 0.02), x: 0, y: 0 }, // shadow under the rim
+    ];
+    sproutLeaves = [
+      { w: wash(blobShape(9, 2, 1, 0.45), LEAVES[0], rnd, 8, 0.16, 0.08), x: -9, y: -20, rot: -0.5, grow: 0 },
+      { w: wash(blobShape(10, 2, 1, 0.42), LEAVES[1], rnd, 8, 0.16, 0.08), x: 10, y: -27, rot: 0.45, grow: 0 },
+      { w: wash(blobShape(8, 2, 1, 0.45), LEAVES[0], rnd, 8, 0.16, 0.08), x: -6, y: -38, rot: -0.7, grow: 1 },
+    ];
+  }
 
   function paintPot(cx: number, cy: number) {
-    const lift = Math.round(potLift.v);
-    for (const [x, y, c] of potPixels) { ctx.fillStyle = c; ctx.fillRect(x * PG - cx, y * PG - cy + lift, PG, PG); }
-    if (planted) return;
-    for (const [x, y, i] of potHover ? [...SPROUT, ...SPROUT_HOVER] : SPROUT) {
-      ctx.fillStyle = MOSS[i][0];
-      ctx.fillRect(x * PG - cx, y * PG - cy + lift, PG, PG);
+    const lift = potLift.v;
+    ctx.globalCompositeOperation = 'multiply';
+    for (const p of potWashes) drawWash(p.w, p.x - cx, p.y - cy + lift, 1, 1);
+    if (!planted) {
+      // the sprout waiting in the soil; it stands up a little taller on hover
+      const h = lerp(30, 42, sprout.v);
+      ctx.globalAlpha = 0.7;
+      ctx.strokeStyle = STEM;
+      ctx.lineWidth = 2.2;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(-cx, 2 - cy + lift);
+      ctx.quadraticCurveTo(4 - cx, -h * 0.5 - cy + lift, -1 - cx, -h - cy + lift);
+      ctx.stroke();
+      for (const leaf of sproutLeaves) {
+        const show = leaf.grow ? sprout.v : 1;
+        if (show <= 0.01) continue;
+        const dy = leaf.y * lerp(1, 1.3, sprout.v);
+        ctx.save();
+        ctx.translate(leaf.x - cx, dy - cy + lift);
+        ctx.rotate(leaf.rot);
+        drawWash(leaf.w, 0, 0, show, 1);
+        ctx.restore();
+      }
     }
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
   }
 
   let potBtn: HTMLButtonElement;
@@ -679,11 +783,8 @@ import { tree } from '../data/tree';
     potBtn = document.createElement('button');
     potBtn.type = 'button';
     potBtn.className = 'pot-btn';
-    potBtn.style.left = `${-16 * PG}px`;
-    potBtn.style.top = `${-9 * PG}px`;
-    potBtn.style.width = `${32 * PG}px`;
-    potBtn.style.height = `${32 * PG}px`;
-    const hover = (on: boolean) => { potHover = on; wake(); };
+    Object.assign(potBtn.style, { left: '-64px', top: '-56px', width: '128px', height: '156px' });
+    const hover = (on: boolean) => sprout.go(on ? 1 : 0, 0.45);
     potBtn.addEventListener('pointerenter', () => hover(true));
     potBtn.addEventListener('pointerleave', () => hover(false));
     potBtn.addEventListener('focus', () => hover(true));
@@ -711,20 +812,62 @@ import { tree } from '../data/tree';
     refocus();
   }
 
+  /* ---------- paper: background washes and grain ---------- */
+  function paintPaper() {
+    const b = bgCanvas.getContext('2d')!;
+    bgCanvas.width = Math.round(W * DPR); bgCanvas.height = Math.round(H * DPR);
+    b.setTransform(DPR, 0, 0, DPR, 0, 0);
+    b.fillStyle = PAPER;
+    b.fillRect(0, 0, W, H);
+    // the paper was washed before the tree was painted: a warm rose glow up high,
+    // a cool sage one down low, and a few faint upright washes far off, like distant trunks
+    const rnd = rngFrom(hash('paper'));
+    const glow = (x: number, y: number, r: number, col: string, a: number) => {
+      const g = b.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, col); g.addColorStop(1, 'rgba(255,255,255,0)');
+      b.globalAlpha = a; b.fillStyle = g; b.fillRect(0, 0, W, H);
+    };
+    glow(W * 0.82, H * 0.08, Math.max(W, H) * 0.7, ROSE, 0.42);
+    glow(W * 0.1, H * 1.0, Math.max(W, H) * 0.6, MINT, 0.5);
+    const streaks = Math.round(W / 220);
+    for (let i = 0; i < streaks; i++) {
+      const x = (i + 0.2 + rnd() * 0.6) * (W / streaks), w = 14 + rnd() * 46;
+      const g = b.createLinearGradient(x - w / 2, 0, x + w / 2, 0);
+      g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, ROSE); g.addColorStop(1, 'rgba(255,255,255,0)');
+      b.globalAlpha = 0.1 + rnd() * 0.1;
+      b.fillStyle = g;
+      b.fillRect(x - w / 2, 0, w, H * (0.55 + rnd() * 0.45));
+    }
+    b.globalAlpha = 1;
+    // grain: soft speckle, multiplied over everything painted
+    const g = grainCanvas.getContext('2d')!;
+    grainCanvas.width = Math.round(W * DPR); grainCanvas.height = Math.round(H * DPR);
+    const tile = document.createElement('canvas');
+    tile.width = tile.height = 160;
+    const t = tile.getContext('2d')!;
+    const img = t.createImageData(160, 160);
+    for (let i = 0; i < img.data.length; i += 4) {
+      const v = 255 - Math.floor(Math.pow(rnd(), 3) * 46);
+      img.data[i] = v; img.data[i + 1] = v - 2; img.data[i + 2] = v - 6; img.data[i + 3] = 255;
+    }
+    t.putImageData(img, 0, 0);
+    g.fillStyle = g.createPattern(tile, 'repeat')!;
+    g.fillRect(0, 0, grainCanvas.width, grainCanvas.height);
+  }
+
   /* ---------- setup ---------- */
   function resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
     W = innerWidth; H = innerHeight; S = clamp(W / 1200, 0.62, 1);
     narrow = W < 700;
-    PG = W >= 760 ? 4 : 3;
-    canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
+    paintPaper();
   }
 
   function plant(path: string[]) {
     world.innerHTML = '';
     limbs.length = 0; open.length = 0; placed.length = 0;
-    const trunk = makeLimb(data, 'trunk', 0, 'evan', null, { x: 0, y: -PG }, UP, true);
+    const trunk = makeLimb(data, 'trunk', 0, 'evan', null, { x: 0, y: 6 }, UP, true);
     limbs.push(trunk);
     open.push(trunk);
     makePotButton();
@@ -750,6 +893,7 @@ import { tree } from '../data/tree';
 
   document.documentElement.classList.add('js');
   resize();
+  buildPot();
   const start = readHash();
   planted = start.grown;
   plant(start.path);

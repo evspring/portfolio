@@ -105,3 +105,17 @@ What changed:
 - Removed ageing entirely: no sapling stage, no counting places, nothing kept in the browser, and the content pages no longer record visits.
 - The tree is drawn full-grown from the first click on the pot: thick flared trunk, dense moss, leafy clumps, twigs, a crown at every tip.
 - Growth now comes only from opening folders: each new level grows out of its fork, as before.
+
+**#10, Evan**
+> change the artstyle to a watercolor base, use these images from the game Gris as reference
+
+(Three stills from Gris attached.)
+
+What changed:
+- Replaced the pixel art with watercolour, borrowing Gris's style only (no characters, scenes or shapes from the game).
+- Paper: warm cream with a faint rose glow, a sage glow, faint upright washes like distant trunks, and grain over everything.
+- Stems: coral, painted as overlapping translucent outlines (soft edge, denser core); candelabra twigs ending in square buds.
+- Folders bloom into big square canopies; pages end in small ones. Canopies are layered washes, light to deep, with pooled blotches, a drying edge and a little bleed.
+- Pot repainted in watercolour terracotta; the waiting sprout has painted leaves and stands taller on hover.
+- Layout and motion unchanged: family-tree fan, growth, pan, fade-back, retract.
+- Bugs caught on screenshot: labels never appeared (reveal code lost in the rewrite); first background was big flat camouflage blobs (now soft glows and faint streaks); canopies looked like glossy app icons (rougher layered edges, blotches, bleed); dark page buds looked like eyes (now small canopies); zero-size nodes counted as invisible; a phone label ran off the edge (page labels sit above their canopy on phones); the name wrapped on 360px screens.

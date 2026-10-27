@@ -6,7 +6,7 @@ import FileTree from '../components/FileTree.astro';
 <Base bare>
   <!-- The only chrome: who, where you are in the tree, and how many items are here -->
   <header class="pointer-events-none fixed inset-x-0 top-0 z-10 grid grid-cols-[1fr_auto_1fr] items-baseline gap-4 px-5 pt-6 text-[12.5px] sm:px-8">
-    <h1 class="pointer-events-auto font-medium">
+    <h1 class="pointer-events-auto font-medium whitespace-nowrap">
       Evan Springer<span class="hidden font-normal text-quiet sm:inline">, product designer</span>
     </h1>
     <nav class="tree-path pointer-events-auto text-quiet" aria-label="Current folder" data-path>evan</nav>
@@ -23,7 +23,7 @@ import FileTree from '../components/FileTree.astro';
   .tree-path [aria-current] { color: var(--color-ink); }
   .tree-path .sep { color: var(--color-rule); }
   /* the tree can grow behind the chrome; a soft halo keeps the words readable */
-  .tree-path, [data-count] { text-shadow: 0 0 3px var(--color-page), 0 0 3px var(--color-page), 0 0 8px var(--color-page); }
-  html.js body { overflow: hidden; }
+  .tree-path, [data-count] { text-shadow: 0 0 3px var(--color-paper), 0 0 3px var(--color-paper), 0 0 8px var(--color-paper); }
+  html.js body { overflow: hidden; background: var(--color-paper); }
   html:not(.js) [data-path], html:not(.js) [data-count] { display: none; }
 </style>

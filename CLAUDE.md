@@ -17,7 +17,8 @@ Read DESIGN-BRIEF.md before making design decisions. The one line in it beats an
 
 - Commit secrets, API keys or `.env` files, or print them in output.
 - Deploy as a Cloudflare Worker. This is a Cloudflare Pages static site.
-- Add new colour. Colour comes from the tree's moss and terracotta pot (home) and the light strip (Sequence) only.
+- Add new colour. The home page uses only the watercolour tokens (paper, stem, leaves, pot) in `global.css`; the Sequence case study has the light strip.
+- Copy anything from Gris. It's a style reference only: no characters, scenes or shapes lifted from the game.
 - Add anything to the home page outside the tree beyond the name, path and item count.
 - Put screenshots on anything but the gray mat.
 - Publish anything marked as under NDA in DESIGN-BRIEF.md.

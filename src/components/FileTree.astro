@@ -159,6 +159,9 @@ import { tree } from '../data/tree';
 
   const UP = -Math.PI / 2;
   let W = 0, H = 0, S = 1, narrow = false, DPR = 1;
+  // One design for every screen: the phone tree is the reference, and bigger screens draw
+  // the same tree scaled up by U (from screen height, so it fills the page the same way).
+  let U = 1;
 
   /* ---------- small helpers ---------- */
   const easeOut = (u: number) => 1 - Math.pow(1 - u, 3);
@@ -250,7 +253,7 @@ import { tree } from '../data/tree';
   }
 
   /* ---------- sizes ---------- */
-  const k = () => lerp(0.72, 1, (S - 0.62) / 0.38);
+  const k = () => 0.72 * U;
   // How much a level's spread shrinks as the tree climbs: wide at the bottom, gathering
   // toward the top like a crown.
   const taper = (depth: number) => [1, 1, 0.8, 0.66, 0.56][Math.min(depth, 4)];
@@ -267,16 +270,16 @@ import { tree } from '../data/tree';
       const min = forkHalf + canopyFor(depth) / 2 + 22;
       return { len: Math.max(want, min), w: depth === 1 ? W2(20, 9) : W2(15, 7) };
     }
-    const side = (narrow ? 128 : clamp(W * 0.2, 150, 290)) * taper(depth); // wide screens spread further
-    // on phones the middle page sits higher than its neighbours, so their labels stack instead of colliding
-    const want = center ? (narrow ? 158 : side * 0.68) : side;
+    const side = 128 * U * taper(depth);
+    // the middle page sits higher than its neighbours, so their labels stack instead of colliding
+    const want = center ? 158 * U : side;
     const min = (forkHalf || 18) + leafFor(center, depth) / 2 + 14;
     return { len: Math.max(want, min), w: depth === 1 ? W2(12, 4.5) : depth === 2 ? W2(10, 4) : W2(8.5, 3.5) };
   }
-  const canopyFor = (depth: number) => (narrow ? (depth === 1 ? 128 : 112) : (depth === 1 ? 170 : 150)) * k();
+  const canopyFor = (depth: number) => (depth === 1 ? 128 : 112) * k();
   // pages' canopies: big enough to read as the thing you click; the ones out on the sides biggest
   const leafFor = (center: boolean, depth = 1) =>
-    (narrow ? (center ? 70 : 82) * (depth >= 3 ? 0.86 : 1) : (center ? 104 : 124)) * k();
+    (center ? 70 : 82) * (depth >= 3 ? 0.86 : 1) * k();
 
   function makeCanopy(size: number, light: string, deep: string, rnd: () => number): Canopy {
     const sq = blobShape(size / 2, 5.5, 1, 1, 28);
@@ -434,9 +437,7 @@ import { tree } from '../data/tree';
   function fanFor(kids: TreeNode[], depth: number): number[] {
     const n = kids.length;
     // radians from straight up; higher levels fan narrower so the crown draws in
-    const spread = narrow
-      ? 1.0 * [1, 1, 0.86, 0.68, 0.62][Math.min(depth + 1, 4)]
-      : 1.2 * [1, 1, 0.86, 0.76, 0.7][Math.min(depth + 1, 4)];
+    const spread = [1, 1, 0.86, 0.68, 0.62][Math.min(depth + 1, 4)];
     let slots: number[];
     if (n === 1) slots = [0];
     else if (n === 2 && kids.some((c) => c.kind === 'folder')) slots = [0, (depth % 2 ? -1 : 1) * spread];
@@ -539,7 +540,7 @@ import { tree } from '../data/tree';
     const outward = leansLeft ? [left, right] : [right, left];
     const tries: Spot[] = isFolder
       ? [right, left, under]
-      : narrow ? [over, overOut, ...outward, under] : [...outward, over, under];
+      : [over, overOut, ...outward, under];
     const pick = tries.find((t) => !blocked(t.box, l)) ?? tries[0];
     if (pick.cls) el.classList.add(pick.cls);
     l.box = pick.box;
@@ -916,7 +917,8 @@ import { tree } from '../data/tree';
     DPR = Math.min(window.devicePixelRatio || 1, 2);
     W = innerWidth; H = innerHeight; S = clamp(W / 1200, 0.62, 1);
     narrow = W < 700;
-    POT_SCALE = narrow ? 1 : H < 820 ? 1.1 : 1.3;
+    U = narrow ? 1 : clamp(H / 690, 1, 1.6);
+    POT_SCALE = U;
     canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
     paintPaper();
   }

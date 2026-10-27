@@ -147,3 +147,12 @@ What changed:
 - Branches curl, so a canopy can land nearer the fork than its branch length suggests: each new branch now grows a little longer until its canopy is clear of the fork's canopy and its siblings'. Canopies cluster without overlapping, so each stays its own button.
 - Phones: the middle canopy at the top sits higher than its neighbours, and side labels can lean outward above their canopy, so no label runs off a 360px screen.
 - Checked at eight screen sizes: no labels off screen, no canopies overlapping, pot clear of the item count, clicking inside a canopy opens its page.
+
+**#14, Evan**
+> Make the tree of the desktop version look similar to the tree on the phone version
+
+What changed:
+- One design for every screen: the phone tree is the reference, and bigger screens draw the same tree scaled up (by screen height, from 1× up to 1.6×). Same fan angles, same branch-to-canopy proportions, same taper, same labels above the canopies.
+- Desktop no longer spreads side branches far out; the tree is compact and tall, with the crown gathering at the top like on the phone.
+- Pot scales with the tree. Phone layout is unchanged.
+- Checked at eight screen sizes: no labels off screen, no canopies overlapping, pot clear of the item count, clicking a canopy opens its page.

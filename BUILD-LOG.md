@@ -198,3 +198,11 @@ What changed:
 - The tree's name, path and item count fade with the tree instead of popping.
 - Caught on the way: the new page appeared all at once at first, because the browser captured it before its content was read in (fixed by holding the first paint until it is); the page's lower half showed early because the whole tall page was moving one screen (fixed by carrying only the visible slice).
 - Firefox doesn't support this yet: pages just open there, no stutter.
+
+**#19, Evan**
+> lets remove the file extensions on each of the pages and just use the page name instead
+
+What changed:
+- Pages on the tree now show their names: Sequence, RealTruck Connect, Husky Liners, Mindra, About, Contact (each has a `label` in `src/data/tree.ts`). Folders still read `work/` and `realtruck/`.
+- The no-JavaScript list uses the same names.
+- Rechecked at eight screen sizes: no labels off screen or overlapping.

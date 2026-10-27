@@ -3,7 +3,8 @@
   files open pages. Add a page here and it appears on the tree.
 */
 export interface TreeNode {
-  name: string;
+  name: string; // folders show this (e.g. work/); pages show their label
+  label?: string; // the page's name, as shown on the tree
   kind: 'folder' | 'file';
   href?: string; // files only
   children?: TreeNode[]; // folders only
@@ -23,16 +24,16 @@ export const tree: TreeNode = {
           name: 'realtruck',
           kind: 'folder',
           children: [
-            { name: 'sequence.md', kind: 'file', href: '/work/sequence/' },
-            { name: 'realtruck-connect.md', kind: 'file', href: '/work/realtruck-connect/' },
-            { name: 'husky-liners.md', kind: 'file', href: '/work/husky-liners/' },
+            { name: 'sequence', label: 'Sequence', kind: 'file', href: '/work/sequence/' },
+            { name: 'realtruck-connect', label: 'RealTruck Connect', kind: 'file', href: '/work/realtruck-connect/' },
+            { name: 'husky-liners', label: 'Husky Liners', kind: 'file', href: '/work/husky-liners/' },
           ],
         },
-        { name: 'mindra.md', kind: 'file', href: '/work/mindra/' },
+        { name: 'mindra', label: 'Mindra', kind: 'file', href: '/work/mindra/' },
       ],
     },
-    { name: 'about.md', kind: 'file', href: '/about/' },
-    { name: 'contact.txt', kind: 'file', href: `mailto:${EMAIL}` },
+    { name: 'about', label: 'About', kind: 'file', href: '/about/' },
+    { name: 'contact', label: 'Contact', kind: 'file', href: `mailto:${EMAIL}` },
   ],
 };
 

@@ -28,16 +28,16 @@ import { tree } from '../data/tree';
     <ul>
       {tree.children!.map((a) => (
         <li>
-          {a.kind === 'file' ? <a href={a.href}>{a.name}</a> : <span>{a.name}/</span>}
+          {a.kind === 'file' ? <a href={a.href}>{a.label ?? a.name}</a> : <span>{a.name}/</span>}
           {a.children && (
             <ul>
               {a.children.map((b) => (
                 <li>
-                  {b.kind === 'file' ? <a href={b.href}>{b.name}</a> : <span>{b.name}/</span>}
+                  {b.kind === 'file' ? <a href={b.href}>{b.label ?? b.name}</a> : <span>{b.name}/</span>}
                   {b.children && (
                     <ul>
                       {b.children.map((c) => (
-                        <li><a href={c.href}>{c.name}</a></li>
+                        <li><a href={c.href}>{c.label ?? c.name}</a></li>
                       ))}
                     </ul>
                   )}
@@ -108,7 +108,7 @@ import { tree } from '../data/tree';
 </style>
 
 <script>
-  type TreeNode = { name: string; kind: 'folder' | 'file'; href?: string; children?: TreeNode[] };
+  type TreeNode = { name: string; label?: string; kind: 'folder' | 'file'; href?: string; children?: TreeNode[] };
   type P = { x: number; y: number };
   type Pt = P & { tx: number; ty: number };
   type Box = { x0: number; x1: number; y0: number; y1: number };
@@ -516,7 +516,7 @@ import { tree } from '../data/tree';
     const isFolder = l.kind === 'folder';
     const el = document.createElement(isFolder ? 'button' : 'a');
     el.className = 'tnode';
-    const text = `${l.node.name}${isFolder ? '/' : ''}`;
+    const text = isFolder ? `${l.node.name}/` : l.node.label ?? l.node.name;
     const lw = text.length * 6.7 + 6;
     const { x, y } = l.tip;
     // offsets of the label's anchor from the tip, and how it reads from there

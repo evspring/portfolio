@@ -44,13 +44,15 @@ Measured from the two original videos (16s at 3102×2160, and 18s at 2452×1802,
 evan/
 ├── work/
 │   ├── realtruck/
-│   │   ├── sequence.md
-│   │   ├── realtruck-connect.md
-│   │   └── husky-liners.md
-│   └── mindra.md
-├── about.md
-└── contact.txt   (opens email)
+│   │   ├── Sequence
+│   │   ├── RealTruck Connect
+│   │   └── Husky Liners
+│   └── Mindra
+├── About
+└── Contact   (opens email)
 ```
+
+Folders show as folders (`work/`); pages show their own name, no file extensions.
 
 The structure lives in `src/data/tree.ts`. Add a page there and it grows onto the tree.
 

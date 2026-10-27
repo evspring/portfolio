@@ -46,15 +46,6 @@ const {
           <a href={back} class="text-sm text-quiet no-underline hover:text-ink">Back to the tree</a>
         </header>
 
-        <!-- Reading a page ages the home page's tree (kept in this browser only) -->
-        <script is:inline>
-          try {
-            var k = 'evan-tree-v1', d = JSON.parse(localStorage.getItem(k) || '{}');
-            d.seen = d.seen || [];
-            if (d.seen.indexOf(location.pathname) < 0) d.seen.push(location.pathname);
-            localStorage.setItem(k, JSON.stringify(d));
-          } catch (e) {}
-        </script>
         <main class="mx-auto max-w-[68rem] px-5 sm:px-8">
           <slot />
         </main>

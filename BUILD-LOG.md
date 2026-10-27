@@ -97,3 +97,11 @@ What changed:
 - Sapling and mature looks carry over: every limb's tip gets a leafy crown when old.
 - Labels pick a side that's clear of limbs and other labels; on phones, side labels sit above their icon.
 - Bugs caught on screenshot: first pass looked like a pole with short arms (side limbs now ~215px and ~69° from vertical); a phone label ran off the right edge; the item count sat on the trunk (soft white halo on the path and count).
+
+**#9, Evan**
+> Lets forget about the aging part and just have it as a full grown tree from the start that grows as you progress through the files
+
+What changed:
+- Removed ageing entirely: no sapling stage, no counting places, nothing kept in the browser, and the content pages no longer record visits.
+- The tree is drawn full-grown from the first click on the pot: thick flared trunk, dense moss, leafy clumps, twigs, a crown at every tip.
+- Growth now comes only from opening folders: each new level grows out of its fork, as before.

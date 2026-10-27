@@ -36,7 +36,7 @@ Measured from the two original videos (16s at 3102×2160, and 18s at 2452×1802,
 
 ## Signature thing
 
-**The tree.** The home page starts as a planted terracotta pot with a small sprout, alone on the page. Click (or tap) the pot and a young tree grows out of it; from there the page is the site as a literal file tree, and nothing else: a name at the top left, the current path at the top (click a folder in it to go back up), and an item count at the bottom.
+**The tree.** The home page starts as a planted terracotta pot with a small sprout, alone on the page. Click (or tap) the pot and a full-grown trunk rises out of it; from there the page is the site as a literal file tree, and nothing else: a name at the top left, the current path at the top (click a folder in it to go back up), and an item count at the bottom.
 
 ```
 evan/
@@ -70,7 +70,9 @@ Measured from Finn Taylor's "Literal file tree" (20s, 1516×1080, 50fps).
 
 **It's shaped like a family tree.** Every folder is a fork, and everything in it gets its own limb fanning out from that fork at the same level. Folders climb up the middle and become the next fork; pages spread wide to both sides (about 69° from vertical on big screens), leaving flatter and curling upward like real branches. Each level opens above the last, so the open path reads bottom to top: `evan` → `work` → `realtruck`. Sibling limbs grow together, the middle one leading and the side ones a beat behind; the view pans to fit the new level. Pages read outward (label to the right on the right side, left on the left); on phones, side labels sit above their icon so nothing runs off screen.
 
-**It ages as people explore.** There are 8 places to explore (2 folders, 6 pages). Each new one ages the tree: a sapling (thin bare trunk, a few fresh leaves at the tips, shorter) becomes a mature tree (trunk about four times thicker and flared at the soil, dense moss, foliage clumps, twigs, a full leafy crown on every branch tip). Opening a new folder grows the tree on the spot; reading a page grows it when you come back. Every pixel is generated once at full maturity and carries the age it needs to appear, so growth is smooth. Progress is kept in this browser only (localStorage, `evan-tree-v1`). The trunk rises straight out of the soil to the first fork. The pot is also a way home: clicking it once the tree is grown closes every branch. Every page links back into the tree at its own folder (`/#/work/realtruck`). Coming back from a page (`/#/…`) skips the pot: the tree is already grown. The pot is a little chunkier on big screens (4px pixels vs 3px), where it's alone on the page.
+**Always full-grown.** The tree is mature from the start: thick bark flared at the soil, dense moss, leafy clumps, twigs and a leafy crown at every tip. It grows as people open folders, not over time.
+
+The trunk rises straight out of the soil to the first fork. The pot is also a way home: clicking it once the tree is grown closes every branch. Every page links back into the tree at its own folder (`/#/work/realtruck`). Coming back from a page (`/#/…`) skips the pot: the tree is already grown. The pot is a little chunkier on big screens (4px pixels vs 3px), where it's alone on the page.
 
 
 **Access.** Folders are real buttons with `aria-expanded`; files are real links; Tab walks the tree, Escape closes the deepest branch. Reduced motion shows each state without growth. Without JavaScript, the page is a plain nested list of every page.

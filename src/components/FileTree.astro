@@ -4,8 +4,8 @@
   "Literal file tree", shaped like a family tree. It starts as a planted
   terracotta pot; clicking the pot grows a sapling that forks. Every item in a
   folder gets its own limb fanning out from that fork: folders climb up the
-  middle, pages spread to the sides on the same level. Files open pages, and
-  every new folder or page someone explores ages the tree, sapling to mature.
+  middle, pages spread to the sides on the same level. The tree is full-grown
+  from the start; it grows outward as people open folders.
 
   Motion measured from the reference video (DESIGN-BRIEF.md, "The tree"):
   - a branch grows in ~0.85s, fast then slowing; moss fills in just behind the tip
@@ -207,44 +207,13 @@ import { tree } from '../data/tree';
     file: '<svg viewBox="0 0 16 16"><path d="M3.6 1.6h5.9l2.9 2.9v9.9H3.6z"/><path d="M9.5 1.6v2.9h2.9M5.8 8h4.4M5.8 10.4h4.4"/></svg>',
   };
 
-  /* ---------- maturity: the tree ages as people explore ---------- */
-  // Places to explore: every folder and every page. Kept in this browser only.
-  const STORE = 'evan-tree-v1';
-  const places: string[] = [];
-  (function collect(node: TreeNode, trail: string) {
-    for (const c of node.children ?? []) {
-      if (c.kind === 'folder') { places.push(`${trail}/${c.name}/`); collect(c, `${trail}/${c.name}`); }
-      else places.push(c.href!);
-    }
-  })(data, '');
-  const readStore = (): { seen: string[]; shown?: number } => {
-    try { return JSON.parse(localStorage.getItem(STORE) || '{}'); } catch { return { seen: [] }; }
-  };
-  const writeStore = (d: { seen: string[]; shown?: number }) => {
-    try { localStorage.setItem(STORE, JSON.stringify(d)); } catch {}
-  };
-  const maturityOf = (seen: string[]) => places.filter((p) => seen.includes(p)).length / places.length;
-  const mat = new Tween(maturityOf(readStore().seen ?? [])); // the age being drawn, animated
-  let layoutAge = mat.v; // the age new limbs are laid out for (their length)
-
-  // Record a new place; if it's new, the tree grows toward its new age.
-  function explore(place: string, grow = false) {
-    const d = readStore();
-    const seen = d.seen ?? [];
-    if (seen.includes(place)) return;
-    seen.push(place);
-    const target = maturityOf(seen);
-    writeStore({ seen, shown: grow ? target : d.shown });
-    if (grow) { layoutAge = target; mat.go(target, 1.4); }
-  }
-
   /* ---------- sizes ---------- */
   const k = () => lerp(0.72, 1, (S - 0.62) / 0.38);
-  const ageLen = () => lerp(0.86, 1.04, layoutAge);
+  const ageLen = () => 1;
   function sizeFor(kind: Kind, depth: number, center: boolean): { len: number; w: [number, number] } {
     const kk = k();
     if (kind === 'trunk')
-      return { len: clamp(H * lerp(0.26, 0.36, layoutAge), 150, 330), w: [22 * kk, 9 * kk] };
+      return { len: clamp(H * 0.34, 150, 330), w: [22 * kk, 9 * kk] };
     if (kind === 'folder')
       return { len: clamp(H * 0.19, 120, 185) * ageLen(), w: (depth === 1 ? [12, 5] : [9, 3.6]).map((v) => v * kk) as [number, number] };
     // pages on the sides reach far out, so each level spreads wide like a family tree
@@ -314,9 +283,8 @@ import { tree } from '../data/tree';
   }
 
   /* ---------- pixels: bark core, moss clumps, twigs, leafy tips ---------- */
-  // Every limb is generated at full maturity. Each pixel carries the maturity it
-  // needs to appear, so the same tree can be drawn as a sapling or an old mossy one,
-  // and can grow between the two in front of you.
+  // Every limb is a full-grown, mossy limb: thick bark, moss clumps, leafy clumps,
+  // twigs and a leafy crown at the tip.
   function buildPixels(b: Limb, rnd: () => number) {
     const cells = new Map<string, { color: string; p: Pix }>();
     const put = (x: number, y: number, color: string, s: number, moss: boolean, thr: number, need: number) => {
@@ -518,7 +486,6 @@ import { tree } from '../data/tree';
       el.addEventListener('click', () => toggle(l));
     } else {
       (el as HTMLAnchorElement).href = l.node.href!;
-      el.addEventListener('click', () => explore(l.node.href!)); // the tree grows when you come back
     }
     world.appendChild(el);
     l.el = el;
@@ -527,7 +494,6 @@ import { tree } from '../data/tree';
   /* ---------- opening and closing ---------- */
   function openFolder(f: Limb, instant = false) {
     closeBelow(open.indexOf(f.parent!));
-    if (!instant) explore(`${f.key.replace(/^evan/, '')}/`, true);
     open.push(f);
     f.el?.setAttribute('aria-expanded', 'true');
     spawnKids(f, instant);
@@ -624,7 +590,7 @@ import { tree } from '../data/tree';
 
   function draw(now: number) {
     raf = 0;
-    let busy = cam.x.tick(now) | cam.y.tick(now) | potLift.tick(now) | mat.tick(now) ? true : false;
+    let busy = cam.x.tick(now) | cam.y.tick(now) | potLift.tick(now) ? true : false;
     for (const l of limbs) busy = l.grow.tick(now) || l.moss.tick(now) || busy;
 
     const cx = Math.round(cam.x.v), cy = Math.round(cam.y.v);
@@ -642,14 +608,12 @@ import { tree } from '../data/tree';
   }
 
   function paint(l: Limb, cx: number, cy: number) {
-    const age = planted ? mat.v : 0;
     const reach = l.grow.v * l.len;
     const moss = l.moss.v * (l.dying ? l.grow.v : 1);
     for (const [color, pix] of l.buckets) {
       ctx.fillStyle = color;
       for (const p of pix) {
         if (p.s > reach) continue;
-        if (p.need > age) continue;
         if (p.moss && p.thr > moss) continue;
         const x = p.gx * G - cx, y = p.gy * G - cy;
         if (x < -G || y < -G || x > W || y > H) continue;
@@ -787,18 +751,6 @@ import { tree } from '../data/tree';
   document.documentElement.classList.add('js');
   resize();
   const start = readHash();
-  {
-    const d = readStore();
-    const target = maturityOf(d.seen ?? []);
-    const shown = Math.min(d.shown ?? target, target);
-    if (start.grown && shown < target) {
-      // came back from a page they hadn't read: start at the old age, then grow
-      mat.set(shown);
-      setTimeout(() => mat.go(target, 1.8), 450);
-    } else mat.set(target);
-    layoutAge = target;
-    writeStore({ seen: d.seen ?? [], shown: target });
-  }
   planted = start.grown;
   plant(start.path);
   wake();

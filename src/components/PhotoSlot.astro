@@ -1,0 +1,24 @@
+---
+/*
+  A space for a photo. Until a photo is added it's a quiet paper-toned block; give it `src`
+  (a file in /public, e.g. "/about/portrait.jpg") and `alt` and it shows the photo instead.
+*/
+interface Props {
+  src?: string;
+  alt?: string;
+  ratio?: string; // CSS aspect-ratio, e.g. "4 / 5"
+  class?: string;
+}
+const { src, alt = '', ratio = '4 / 3', class: cls } = Astro.props;
+---
+
+{src ? (
+  <img src={src} alt={alt} loading="lazy" class:list={['photo-slot', cls]} style={`aspect-ratio:${ratio}`} />
+) : (
+  <div class:list={['photo-slot photo-slot--empty', cls]} style={`aspect-ratio:${ratio}`} aria-hidden="true"></div>
+)}
+
+<style>
+  .photo-slot { display: block; width: 100%; border-radius: var(--radius-mat); object-fit: cover; }
+  .photo-slot--empty { background: color-mix(in srgb, var(--color-mat) 70%, var(--color-paper)); }
+</style>

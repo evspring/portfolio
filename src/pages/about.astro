@@ -1,27 +1,61 @@
 ---
 import Base from '../layouts/Base.astro';
-import { EMAIL, treeLinkFor } from '../data/tree';
+import PhotoSlot from '../components/PhotoSlot.astro';
+import { treeLinkFor } from '../data/tree';
+
+/*
+  Photos: drop files into public/about/ and fill in `src` and `alt` below.
+  e.g. { src: '/about/portrait.jpg', alt: 'Evan on a trail' }
+*/
+const portrait = { src: undefined, alt: '' };
+const photos = [
+  { src: undefined, alt: '' },
+  { src: undefined, alt: '' },
+  { src: undefined, alt: '' },
+];
 ---
 
 <Base title="About — Evan Springer" back={treeLinkFor('/about/')}>
   <article class="pt-24 sm:pt-32">
-    <h1 class="text-2xl font-medium tracking-[-0.02em]">About</h1>
-    <div class="mt-10 max-w-[60ch] space-y-4 text-lg leading-relaxed">
-      <p>
-        <!-- TODO: Evan's own words -->
-        I'm Evan, a product designer at RealTruck. I work where hardware, software and the
-        people who use them meet: truck accessories that light up from a phone, websites that
-        help people find the right part, and tools for therapists who need to get notes out of
-        the way.
-      </p>
-      <p class="text-quiet">
-        If you're building an app or product and want a designer who stays with it from the
-        first sketch to the shipped screen, I'd like to hear about it.
-      </p>
+    <div class="grid gap-10 sm:grid-cols-[minmax(0,1fr)_15rem] sm:items-start sm:gap-14">
+      <div>
+        <h1 class="text-2xl font-medium tracking-[-0.02em]">About</h1>
+        <div class="mt-10 max-w-[60ch] space-y-5 text-lg leading-relaxed">
+          <p>I'm Evan, a UX/UI designer with a background in Cognitive Science.</p>
+          <p>
+            When it comes to design, my philosophy has always been that of a problem solver. I find
+            that every individual tells a story, and every interface is a unique journey. I find joy
+            in understanding the simple things during that journey: what people enjoy, how they
+            perceive their experiences, and what they think.
+          </p>
+        </div>
+      </div>
+      <PhotoSlot ratio="4 / 5" src={portrait.src} alt={portrait.alt} class="max-w-[15rem] sm:mt-[4.5rem]" />
     </div>
-    <a
-      href={`mailto:${EMAIL}`}
-      class="mt-10 inline-flex h-11 items-center rounded-[10px] bg-action px-6 text-sm font-medium text-white no-underline"
-    >Email me</a>
+
+    <section class="mt-16 sm:mt-20">
+      <h2 class="text-lg font-medium">My inspirations and interests</h2>
+      <div class="mt-5 max-w-[60ch] space-y-5 text-lg leading-relaxed">
+        <p>
+          For most of my life I've defined myself as a dedicated storyteller and artist. From
+          practicing 3D animation as a high school student to building a community through film in
+          college, I'm always creating and looking for something new. In addition to art, you can
+          often catch me outdoors hiking and taking photos, or reading my favorite sci-fi books!
+        </p>
+        <p>
+          I'm an avid content creator. I've always had a passion for telling stories and use YouTube
+          to create, produce, and share my stories online. Over the past two years I've built an
+          online community of over 75,000 people through storytelling and content creation, and
+          it's greatly impacted how I approach design today.
+        </p>
+      </div>
+      <div class="mt-12 grid grid-cols-3 gap-2 sm:gap-4">
+        {photos.map((p) => <PhotoSlot src={p.src} alt={p.alt} />)}
+      </div>
+    </section>
+
+    <p class="mt-20 text-lg">
+      <a href="/contact/" class="underline decoration-rule underline-offset-4 hover:decoration-ink">Get in touch</a>
+    </p>
   </article>
 </Base>

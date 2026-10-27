@@ -33,7 +33,7 @@ export const tree: TreeNode = {
       ],
     },
     { name: 'about', label: 'About', kind: 'file', href: '/about/' },
-    { name: 'contact', label: 'Contact', kind: 'file', href: `mailto:${EMAIL}` },
+    { name: 'contact', label: 'Contact', kind: 'file', href: '/contact/' },
   ],
 };
 

@@ -206,3 +206,12 @@ What changed:
 - Pages on the tree now show their names: Sequence, RealTruck Connect, Husky Liners, Mindra, About, Contact (each has a `label` in `src/data/tree.ts`). Folders still read `work/` and `realtruck/`.
 - The no-JavaScript list uses the same names.
 - Rechecked at eight screen sizes: no labels off screen or overlapping.
+
+**#20, Evan**
+> Lets have contact become its own simple page. For the about page you can use these paragraphs: [Evan's About copy] … For the about section, leave some space for photos that I'll upload later but keep the page minimal where possible.
+
+What changed:
+- About page now uses Evan's words: intro, design philosophy, and "My inspirations and interests". Light fixes only: a comma, "an online community", "75,000 people", a double space.
+- Photo spaces: a portrait beside the intro (below it on phones) and a row of three under the interests section, all quiet paper-toned blocks until photos arrive. To add them: put files in `public/about/` and fill in `src`/`alt` at the top of `src/pages/about.astro` (`PhotoSlot` component).
+- New Contact page: one line, then the email address large. The tree's Contact now opens it (with the pan) instead of an email.
+- About ends with a quiet "Get in touch" link to Contact.

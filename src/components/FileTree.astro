@@ -25,6 +25,7 @@ import { tree } from '../data/tree';
   <canvas class="tree-canvas" aria-hidden="true"></canvas>
   <canvas class="tree-grain" aria-hidden="true"></canvas>
   <div class="tree-world" data-world></div>
+  <canvas class="tree-veil" aria-hidden="true"></canvas>
 
   <nav class="tree-list" aria-label="Pages">
     <ul>
@@ -60,6 +61,9 @@ import { tree } from '../data/tree';
   .tree-bg, .tree-canvas, .tree-grain { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
   /* paper grain sits over the paint, so washes pick up the texture of the paper */
   .tree-grain { mix-blend-mode: multiply; opacity: 0.5; }
+  /* the canopy that swells to fill the screen when a page opens; above everything, including the chrome */
+  .tree-veil { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 40; }
+  .tree-veil.busy { pointer-events: auto; }
   .tree-world { position: absolute; left: 0; top: 0; will-change: transform; }
 
   /* Every page as a plain list, for when JavaScript is off. With it on, the tree's own
@@ -559,6 +563,13 @@ import { tree } from '../data/tree';
       el.addEventListener('click', () => toggle(l));
     } else {
       (el as HTMLAnchorElement).href = l.node.href!;
+      // pages open with the canopy swelling to fill the screen
+      el.addEventListener('click', (e) => {
+        const href = l.node.href!;
+        if (href.startsWith('mailto:') || reduced || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        e.preventDefault();
+        openPage(l);
+      });
     }
     const hover = (on: boolean) => l.hover.go(on ? 1 : 0, on ? 0.35 : 0.5);
     el.addEventListener('pointerenter', () => hover(true));
@@ -870,6 +881,7 @@ import { tree } from '../data/tree';
   }
 
   /* ---------- paper: background washes and grain ---------- */
+  let grainPattern: CanvasPattern | null = null;
   function paintPaper() {
     const b = bgCanvas.getContext('2d')!;
     bgCanvas.width = Math.round(W * DPR); bgCanvas.height = Math.round(H * DPR);
@@ -909,8 +921,107 @@ import { tree } from '../data/tree';
     }
     t.putImageData(img, 0, 0);
     g.fillStyle = g.createPattern(tile, 'repeat')!;
+    grainPattern = vctx.createPattern(tile, 'repeat');
     g.fillRect(0, 0, grainCanvas.width, grainCanvas.height);
   }
+
+  /* ---------- the canopy transition ---------- */
+  // Measured from sasha birukoff's "fluid illumination": each change of shape takes ~0.6s,
+  // slow-fast-slow; width and height don't move together (one leads by ~0.1s), which makes it
+  // feel liquid; the edges wobble while it moves and settle when it stops; the colour glows
+  // from a deeper centre to lighter edges.
+  const veil = root.querySelector<HTMLCanvasElement>('.tree-veil')!;
+  const vctx = veil.getContext('2d')!;
+  const VEIL_KEY = 'tree-veil';
+  const easeInOut = (u: number) => (u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2);
+  type VeilRun = { x: number; y: number; size: number; light: string; deep: string; dir: 1 | -1; t0: number; dur: number; done?: () => void };
+  let veilRun: VeilRun | null = null;
+
+  function drawVeil(p: number, now: number, v: VeilRun) {
+    vctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    vctx.clearRect(0, 0, W, H);
+    if (p <= 0) return;
+    const cover = Math.hypot(W, H) * 1.15;
+    // the two axes, one a beat behind the other
+    const ux = easeInOut(clamp(p / 0.86, 0, 1)), uy = easeInOut(clamp((p - 0.14) / 0.86, 0, 1));
+    const w = lerp(v.size, cover, ux), h = lerp(v.size, cover, uy);
+    const cx = lerp(v.x, W / 2, ux), cy = lerp(v.y, H / 2, uy);
+    // a rounded square whose edge wobbles while it moves
+    const wob = Math.sin(Math.PI * p) * 0.045, n = 5.5, N = 72, t = now / 1000;
+    const path = new Path2D();
+    for (let i = 0; i <= N; i++) {
+      const a = (i / N) * Math.PI * 2, c = Math.cos(a), s2 = Math.sin(a);
+      const r = 1 + wob * (Math.sin(3 * a + t * 5) + 0.6 * Math.sin(5 * a - t * 7));
+      const x = cx + (w / 2) * r * Math.sign(c) * Math.pow(Math.abs(c), 2 / n);
+      const y = cy + (h / 2) * r * Math.sign(s2) * Math.pow(Math.abs(s2), 2 / n);
+      i ? path.lineTo(x, y) : path.moveTo(x, y);
+    }
+    path.closePath();
+    const g = vctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(w, h) * 0.62);
+    g.addColorStop(0, v.deep);
+    g.addColorStop(0.55, v.deep);
+    g.addColorStop(1, v.light);
+    vctx.save();
+    vctx.filter = `blur(${lerp(2, 10, Math.sin(Math.PI * p))}px)`; // soft, wet edge, softest mid-flight
+    vctx.globalAlpha = lerp(0.85, 1, p);
+    vctx.fillStyle = g;
+    vctx.fill(path);
+    vctx.filter = 'none';
+    // paper grain over the paint
+    if (grainPattern) { vctx.globalCompositeOperation = 'multiply'; vctx.globalAlpha = 0.5; vctx.fillStyle = grainPattern; vctx.fill(path); }
+    vctx.restore();
+  }
+
+  function runVeil(v: VeilRun) {
+    veilRun = v;
+    veil.classList.add('busy');
+    const step = (now: number) => {
+      if (veilRun !== v) return;
+      const u = clamp((now - v.t0) / (v.dur * 1000), 0, 1);
+      drawVeil(v.dir === 1 ? u : 1 - u, now, v);
+      if (u < 1) requestAnimationFrame(step);
+      else {
+        if (v.dir === -1) { clearVeil(); }
+        v.done?.();
+      }
+    };
+    requestAnimationFrame(step);
+  }
+  function clearVeil() {
+    veilRun = null;
+    veil.classList.remove('busy');
+    vctx.setTransform(1, 0, 0, 1, 0, 0);
+    vctx.clearRect(0, 0, veil.width, veil.height);
+  }
+
+  function openPage(l: Limb) {
+    const c = l.crown!;
+    const href = l.node.href!;
+    try { sessionStorage.setItem(VEIL_KEY, JSON.stringify({ light: c.light, deep: c.deep, href, at: Date.now(), way: 'in' })); } catch {}
+    runVeil({
+      x: l.tip.x - cam.x.v, y: l.tip.y - cam.y.v, size: l.crownSize,
+      light: c.light, deep: c.deep, dir: 1, t0: performance.now(), dur: 0.75,
+      done: () => { location.href = href; },
+    });
+  }
+
+  // Coming back from a page: start full-screen and flow back into the canopy you came from.
+  function returnFromPage() {
+    let d: { light: string; deep: string; href: string; at: number; way: string } | null = null;
+    try { d = JSON.parse(sessionStorage.getItem(VEIL_KEY) || 'null'); sessionStorage.removeItem(VEIL_KEY); } catch {}
+    if (!d || d.way !== 'out' || Date.now() - d.at > 4000 || reduced) return;
+    const l = limbs.find((x) => x.node.href === d!.href && !x.dying);
+    if (!l) return;
+    const v: VeilRun = {
+      x: l.tip.x - cam.x.v, y: l.tip.y - cam.y.v, size: l.crownSize,
+      light: d.light, deep: d.deep, dir: -1, t0: performance.now() + 120, dur: 0.75,
+    };
+    drawVeil(1, performance.now(), v); // cover the tree before the first frame
+    runVeil(v);
+  }
+
+  // The browser's back button can restore this page mid-transition; start clean.
+  addEventListener('pageshow', (e) => { if ((e as PageTransitionEvent).persisted) clearVeil(); });
 
   /* ---------- setup ---------- */
   function resize() {
@@ -920,6 +1031,7 @@ import { tree } from '../data/tree';
     U = narrow ? 1 : clamp(H / 690, 1, 1.6);
     POT_SCALE = U;
     canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
+    veil.width = Math.round(W * DPR); veil.height = Math.round(H * DPR);
     paintPaper();
   }
 
@@ -956,6 +1068,7 @@ import { tree } from '../data/tree';
   const start = readHash();
   planted = start.grown;
   plant(start.path);
+  returnFromPage();
   wake();
 
   let resizeTimer = 0;

@@ -16,6 +16,7 @@ People who build apps and products (founders, product leads, hiring managers) de
 | --- | --- |
 | Basit A. Khan's minimal UI reels (via @insporadesign, Oct 12 2026, and @basit_designs, Oct 13 2026) | Studied frame by frame; see "What the reels do" below. |
 | Finn Taylor's "Literal file tree" (video) | The home page's idea and motion: the site is a file tree; folders grow branches, files open pages. See "The tree" below. |
+| sasha birukoff's "fluid illumination" (video) | The page transition: a shape that morphs between sizes in ~0.6s, slow-fast-slow, with width and height out of step and a wobbling soft edge, glowing from a deep centre. |
 | Gris (game art, three stills) | The home page's art style: watercolour washes on warm paper, thin flowing coral stems, candelabra twigs with square buds, big translucent geometric canopies, a dusty rose / sage / teal palette. Borrowed as a style only; the tree and every shape in it are our own. |
 | niklaspeterson.com | Structure: a plain one-sentence headline, a short intro, then case studies as large media with a one-line outcome under each. No tricks in the navigation. |
 
@@ -152,3 +153,12 @@ The trunk rises straight out of the soil to the first fork. The pot is also a wa
 - [ ] Anything under NDA that can't be shown publicly (RealTruck Connect is unreleased).
 - [ ] Domain name.
 - [ ] Husky Liners is a website: show it in a browser frame on the mat instead of phones.
+
+## The canopy transition
+
+Measured from sasha birukoff's "fluid illumination" (7s, 60fps; shape size tracked at 30fps): each change of shape takes ~0.6s, slow-fast-slow; one axis leads the other by ~0.1s; the centre holds still; edges stay soft and wobble while moving.
+
+- **Opening a page:** clicking a page's canopy swells it from its place on the tree to cover the screen in 0.75s, drifting to the centre. Width leads height; the edge wobbles and softens mid-flight; the fill glows from the canopy's deep colour at the centre to its light colour at the edges, with paper grain over it.
+- **Arriving:** the page opens under the same colour, which dissolves (fades, blurs, swells slightly) over 0.8s.
+- **Going back:** "Back to the tree" gathers the colour again (0.38s), and the tree flows it back down into the canopy you came from.
+- Skipped for contact (email), modifier-clicks (new tab), and reduced motion. The browser's back button restores a clean page.

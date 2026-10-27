@@ -82,6 +82,19 @@
   }
 }
 
+/* The canopy transition on content pages (see Base.astro). */
+.page-veil { position: fixed; inset: -5%; z-index: 50; pointer-events: none; }
+.page-veil.arrive { animation: veil-arrive 0.8s cubic-bezier(0.33, 0, 0.2, 1) 0.05s both; }
+.page-veil.leave { pointer-events: auto; animation: veil-leave 0.38s cubic-bezier(0.65, 0, 0.35, 1) forwards; }
+@keyframes veil-arrive {
+  from { opacity: 1; filter: blur(0); transform: scale(1); }
+  to { opacity: 0; filter: blur(18px); transform: scale(1.08); }
+}
+@keyframes veil-leave {
+  from { opacity: 0; filter: blur(18px); transform: scale(1.08); }
+  to { opacity: 1; filter: blur(0); transform: scale(1); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

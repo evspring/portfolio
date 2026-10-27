@@ -156,3 +156,14 @@ What changed:
 - Desktop no longer spreads side branches far out; the tree is compact and tall, with the crown gathering at the top like on the phone.
 - Pot scales with the tree. Phone layout is unchanged.
 - Checked at eight screen sizes: no labels off screen, no canopies overlapping, pot clear of the item count, clicking a canopy opens its page.
+
+**#15, Evan**
+> When a user clicks on a section it should transition to the new page with an expansion of the canopy, similar to this video
+
+(Reference attached: sasha birukoff, "fluid illumination".)
+
+What changed:
+- Studied the video: contact sheet at 4fps, shape width/height tracked at 30fps. Each morph ~0.6s, slow-fast-slow, one axis ~0.1s behind the other, centre fixed, soft wobbling edge, deep centre glowing to light edges.
+- Clicking a page's canopy now swells it to fill the screen with that motion, in the canopy's own colours, then opens the page; the page arrives as the colour dissolves.
+- "Back to the tree" reverses it: the colour gathers, and on the tree it flows back into the canopy you came from.
+- Skipped for the email link, for Cmd/Ctrl-clicks (new tab) and for reduced motion. The browser back button restores a clean tree.

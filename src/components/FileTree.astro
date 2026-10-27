@@ -252,14 +252,16 @@ import { tree } from '../data/tree';
   const k = () => lerp(0.72, 1, (S - 0.62) / 0.38);
   function sizeFor(kind: Kind, depth: number, center: boolean): { len: number; w: [number, number] } {
     const kk = k();
-    if (kind === 'trunk') return { len: clamp(H * 0.34, 150, 330), w: [20 * kk, 8 * kk] };
-    if (kind === 'folder') return { len: clamp(H * 0.19, 120, 185), w: (depth === 1 ? [9, 4] : [7, 3]).map((v) => v * kk) as [number, number] };
+    // shorter screens get a slightly shorter trunk, so pot, fork and canopies all fit at once
+    if (kind === 'trunk') return { len: clamp(H * (H < 820 ? 0.3 : 0.34), 170, 400), w: [28 * kk, 11 * kk] };
+    if (kind === 'folder') return { len: clamp(H * 0.23, 140, 240), w: (depth === 1 ? [13, 6] : [10, 4.5]).map((v) => v * kk) as [number, number] };
     // pages on the sides reach far out, so each level spreads wide like a family tree
-    const base = narrow ? (center ? 96 : 118) : (center ? 140 : 215);
-    return { len: base, w: (depth === 1 ? [5.5, 2] : [4.5, 1.7]).map((v) => v * kk) as [number, number] };
+    const side = narrow ? 128 : clamp(W * 0.2, 150, 290); // wide screens spread further
+    const base = center ? (narrow ? 108 : side * 0.66) : side;
+    return { len: base, w: (depth === 1 ? [7.5, 2.8] : [6.5, 2.4]).map((v) => v * kk) as [number, number] };
   }
-  const canopyFor = (depth: number) => (depth === 1 ? 96 : 82) * k();
-  const leafFor = () => (narrow ? 28 : 34) * k();
+  const canopyFor = (depth: number) => (narrow ? (depth === 1 ? 130 : 112) : (depth === 1 ? 150 : 128)) * k();
+  const leafFor = () => (narrow ? 44 : 56) * k();
 
   function makeCanopy(size: number, light: string, deep: string, rnd: () => number): Canopy {
     const sq = blobShape(size / 2, 5.5, 1, 1, 28);
@@ -355,7 +357,7 @@ import { tree } from '../data/tree';
       samples.forEach((q, i) => {
         const t = q.s / limb.len;
         const p = at(limb, q.s);
-        const flare = kind === 'trunk' ? 16 * kk * Math.pow(Math.max(0, 1 - t / 0.12), 2) : 0;
+        const flare = kind === 'trunk' ? 22 * kk * Math.pow(Math.max(0, 1 - t / 0.12), 2) : 0;
         const ww = (lerp(w[0], w[1], Math.pow(t, 0.8)) + flare) * wf * (1 + 0.08 * Math.sin(i * 0.21 + ph));
         const nx = -p.ty, ny = p.tx;
         l.push({ x: q.x + nx * ww / 2, y: q.y + ny * ww / 2 });
@@ -370,7 +372,7 @@ import { tree } from '../data/tree';
       const st = (0.3 + rnd() * 0.5) * limb.len;
       const p = at(limb, st);
       const sideSign = rnd() < 0.5 ? -1 : 1;
-      const out = (7 + rnd() * 10) * kk, up = (12 + rnd() * 18) * kk;
+      const out = (10 + rnd() * 14) * kk, up = (18 + rnd() * 24) * kk;
       const nx = -p.ty * sideSign, ny = p.tx * sideSign;
       const a = { x: p.x, y: p.y }, b = { x: p.x + nx * out, y: p.y + ny * out };
       const pts: P[] = [];
@@ -378,7 +380,7 @@ import { tree } from '../data/tree';
         const t = j / 8, e = t * t;
         pts.push({ x: lerp(a.x, b.x, Math.sqrt(t)), y: lerp(a.y, b.y, t) - up * e });
       }
-      limb.twigs.push({ s: st, pts, bud: (5 + rnd() * 3) * kk, budColor: rnd() < 0.5 ? BUD : LEAVES[2], rot: (rnd() - 0.5) * 0.3 });
+      limb.twigs.push({ s: st, pts, bud: (7 + rnd() * 4) * kk, budColor: rnd() < 0.5 ? BUD : LEAVES[2], rot: (rnd() - 0.5) * 0.3 });
     }
 
     // Folders bloom into a big canopy; pages end in a small one.
@@ -415,7 +417,7 @@ import { tree } from '../data/tree';
   // pages spread out to the sides on the same level.
   function fanFor(kids: TreeNode[], depth: number): number[] {
     const n = kids.length;
-    const spread = narrow ? 1.05 : 1.2; // radians from straight up
+    const spread = narrow ? 1.0 : 1.2; // radians from straight up
     let slots: number[];
     if (n === 1) slots = [0];
     else if (n === 2 && kids.some((c) => c.kind === 'folder')) slots = [0, (depth % 2 ? -1 : 1) * spread];
@@ -588,7 +590,7 @@ import { tree } from '../data/tree';
         if (h > 6) fit({ x0: l.tip.x - h, y0: l.tip.y - h, x1: l.tip.x + h, y1: l.tip.y + h });
         if (l.box) fit(l.box);
       }
-      if (f.kind === 'trunk') fit({ x0: -70, y0: 0, x1: 70, y1: POT_BOTTOM + 10 });
+      if (f.kind === 'trunk') fit({ x0: -70 * POT_SCALE, y0: 0, x1: 70 * POT_SCALE, y1: potBottom() + 10 });
       else { // only the top of the folder's own limb: the fork, not the whole stem below it
         minY = Math.min(minY, f.tip.y - f.crownSize / 2);
         const keepBelow = f.tip.y + f.crownSize / 2 + 30;
@@ -680,7 +682,7 @@ import { tree } from '../data/tree';
       const n = Math.max(2, Math.round(t.pts.length * g));
       ctx.globalAlpha = 0.7 * fade;
       ctx.strokeStyle = STEM;
-      ctx.lineWidth = 1.8;
+      ctx.lineWidth = 2.2;
       ctx.lineCap = 'round';
       ctx.beginPath();
       t.pts.slice(0, n).forEach((q, i) => (i ? ctx.lineTo(q.x - cx, q.y - cy) : ctx.moveTo(q.x - cx, q.y - cy)));
@@ -716,7 +718,8 @@ import { tree } from '../data/tree';
 
   /* ---------- the pot ---------- */
   // A painted terracotta pot, origin at the middle of the soil. y grows downward.
-  const POT_BOTTOM = 92;
+  let POT_SCALE = 1; // the pot grows with the tree on big screens
+  const potBottom = () => 92 * POT_SCALE;
   const potLift = new Tween(0);
   const sprout = new Tween(0); // 0 resting, 1 perked up on hover
   let potWashes: { w: Wash; x: number; y: number }[] = [];
@@ -732,10 +735,10 @@ import { tree } from '../data/tree';
       return pts;
     };
     potWashes = [
-      { w: wash(blobShape(78, 2, 1, 0.13), ROSE, rnd, 10, 0.06, 0.1), x: 0, y: POT_BOTTOM + 2 }, // shadow on the paper
-      { w: wash(trap(-44, 44, 32, -32, 18, POT_BOTTOM), terra, rnd, 14, 0.09, 0.05), x: 0, y: 0 }, // body
-      { w: wash(trap(10, 44, 32, 6, 20, POT_BOTTOM), shade, rnd, 10, 0.07, 0.04), x: 0, y: 0 }, // shaded side
-      { w: wash(trap(-40, -24, -22, -30, 22, POT_BOTTOM - 4), light, rnd, 8, 0.07, 0.05), x: 0, y: 0 }, // light side
+      { w: wash(blobShape(78, 2, 1, 0.13), ROSE, rnd, 10, 0.06, 0.1), x: 0, y: 94 }, // shadow on the paper
+      { w: wash(trap(-44, 44, 32, -32, 18, 92), terra, rnd, 14, 0.09, 0.05), x: 0, y: 0 }, // body
+      { w: wash(trap(10, 44, 32, 6, 20, 92), shade, rnd, 10, 0.07, 0.04), x: 0, y: 0 }, // shaded side
+      { w: wash(trap(-40, -24, -22, -30, 22, 88), light, rnd, 8, 0.07, 0.05), x: 0, y: 0 }, // light side
       { w: wash(trap(-52, 52, 50, -50, 0, 20), terra, rnd, 14, 0.1, 0.035), x: 0, y: 0 }, // rim
       { w: wash(trap(16, 52, 50, 14, 2, 20), shade, rnd, 8, 0.07, 0.03), x: 0, y: 0 },
       { w: wash(blobShape(46, 2, 1, 0.12), soil, rnd, 10, 0.12, 0.05), x: 0, y: 2 }, // soil
@@ -750,8 +753,12 @@ import { tree } from '../data/tree';
 
   function paintPot(cx: number, cy: number) {
     const lift = potLift.v;
+    ctx.save();
+    ctx.translate(-cx, -cy + lift);
+    ctx.scale(POT_SCALE, POT_SCALE);
+    cx = 0; cy = 0;
     ctx.globalCompositeOperation = 'multiply';
-    for (const p of potWashes) drawWash(p.w, p.x - cx, p.y - cy + lift, 1, 1);
+    for (const p of potWashes) drawWash(p.w, p.x, p.y, 1, 1);
     if (!planted) {
       // the sprout waiting in the soil; it stands up a little taller on hover
       const h = lerp(30, 42, sprout.v);
@@ -760,15 +767,15 @@ import { tree } from '../data/tree';
       ctx.lineWidth = 2.2;
       ctx.lineCap = 'round';
       ctx.beginPath();
-      ctx.moveTo(-cx, 2 - cy + lift);
-      ctx.quadraticCurveTo(4 - cx, -h * 0.5 - cy + lift, -1 - cx, -h - cy + lift);
+      ctx.moveTo(0, 2);
+      ctx.quadraticCurveTo(4, -h * 0.5, -1, -h);
       ctx.stroke();
       for (const leaf of sproutLeaves) {
         const show = leaf.grow ? sprout.v : 1;
         if (show <= 0.01) continue;
         const dy = leaf.y * lerp(1, 1.3, sprout.v);
         ctx.save();
-        ctx.translate(leaf.x - cx, dy - cy + lift);
+        ctx.translate(leaf.x, dy);
         ctx.rotate(leaf.rot);
         drawWash(leaf.w, 0, 0, show, 1);
         ctx.restore();
@@ -776,6 +783,7 @@ import { tree } from '../data/tree';
     }
     ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1;
+    ctx.restore();
   }
 
   let potBtn: HTMLButtonElement;
@@ -783,7 +791,8 @@ import { tree } from '../data/tree';
     potBtn = document.createElement('button');
     potBtn.type = 'button';
     potBtn.className = 'pot-btn';
-    Object.assign(potBtn.style, { left: '-64px', top: '-56px', width: '128px', height: '156px' });
+    const ps = POT_SCALE;
+    Object.assign(potBtn.style, { left: `${-64 * ps}px`, top: `${-56 * ps}px`, width: `${128 * ps}px`, height: `${156 * ps}px` });
     const hover = (on: boolean) => sprout.go(on ? 1 : 0, 0.45);
     potBtn.addEventListener('pointerenter', () => hover(true));
     potBtn.addEventListener('pointerleave', () => hover(false));
@@ -860,6 +869,7 @@ import { tree } from '../data/tree';
     DPR = Math.min(window.devicePixelRatio || 1, 2);
     W = innerWidth; H = innerHeight; S = clamp(W / 1200, 0.62, 1);
     narrow = W < 700;
+    POT_SCALE = narrow ? 1 : H < 820 ? 1.1 : 1.3;
     canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
     paintPaper();
   }
@@ -867,7 +877,7 @@ import { tree } from '../data/tree';
   function plant(path: string[]) {
     world.innerHTML = '';
     limbs.length = 0; open.length = 0; placed.length = 0;
-    const trunk = makeLimb(data, 'trunk', 0, 'evan', null, { x: 0, y: 6 }, UP, true);
+    const trunk = makeLimb(data, 'trunk', 0, 'evan', null, { x: 0, y: 6 * POT_SCALE }, UP, true);
     limbs.push(trunk);
     open.push(trunk);
     makePotButton();

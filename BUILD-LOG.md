@@ -119,3 +119,12 @@ What changed:
 - Pot repainted in watercolour terracotta; the waiting sprout has painted leaves and stands taller on hover.
 - Layout and motion unchanged: family-tree fan, growth, pan, fade-back, retract.
 - Bugs caught on screenshot: labels never appeared (reveal code lost in the rewrite); first background was big flat camouflage blobs (now soft glows and faint streaks); canopies looked like glossy app icons (rougher layered edges, blotches, bleed); dark page buds looked like eyes (now small canopies); zero-size nodes counted as invisible; a phone label ran off the edge (page labels sit above their canopy on phones); the name wrapped on 360px screens.
+
+**#11, Evan**
+> Great, make the tree and the canopies bigger they look too small currently
+
+What changed:
+- Canopies about 1.5× bigger (folders 150px, pages 56px on big screens); trunk and limbs thicker; twigs and their buds bigger; the trunk flares wider at the soil.
+- Trunk, folder limbs and side branches all longer; side branches scale with screen width so tablets aren't clipped.
+- Pot grows with the tree on big screens (1.3×, 1.1× on shorter screens).
+- Checked at eight screen sizes (phones to 1920×1080, plus an upright tablet): every label in the open level stays on screen and the pot clears the item count. Caught on the way: the pot covering the item count on 1280×720, a label clipped on 360px phones and on an upright tablet.

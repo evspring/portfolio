@@ -222,3 +222,9 @@ What changed:
 What changed:
 - About and Contact now sit on plain paper: one solid `#F7F0EA`, no glows or streaks, with a much fainter grain (so it still reads as paper). `<Base plain>` turns this on for any page; the tree and case studies keep the full sky.
 - In the pan, the new page's background now fades in slowly over the whole move, so going from the tree's glowing sky to plain paper (and back) is gradual, not a jump.
+
+**#22, Evan**
+> Yeah make those plain too
+
+What changed:
+- Every content page (all four case studies, About, Contact) now sits on plain paper; only the tree keeps the glowing sky. It's the default in `Base.astro`, so new pages get it automatically.

@@ -11,7 +11,7 @@ interface Props {
   bare?: boolean;
   /** Where "Back" returns to: the tree, opened to this page's folder. */
   back?: string;
-  /** Plain, solid paper behind the page (no glows or streaks). */
+  /** Plain, solid paper behind the page (no glows or streaks). Content pages always are. */
   plain?: boolean;
 }
 
@@ -52,7 +52,7 @@ const {
     />
   </head>
   <body class="min-h-screen">
-    <PaperSky plain={plain} />
+    <PaperSky plain={plain || !bare} /> {/* every content page is on plain paper; the tree keeps its sky */}
     {bare ? (
       <slot />
     ) : (

@@ -117,7 +117,7 @@ The trunk rises straight out of the soil to the first fork. The pot is also a wa
 
 | Token | Hex | Use |
 | --- | --- | --- |
-| page | `#F7F0EA` | Background: the tree's warm paper, on every page |
+| page | `#F7F0EA` | Background. Content pages are plain paper with a faint grain; only the tree has the glows and streaks |
 | ink | `#262626` | Headings and body |
 | quiet | `#666261` | Secondary text |
 | mat | `#ECECE7` | The warm gray mat every screen sits on, and unlit light segments |

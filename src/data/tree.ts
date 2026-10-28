@@ -3,8 +3,8 @@
   files open pages. Add a page here and it appears on the tree.
 */
 export interface TreeNode {
-  name: string; // folders show this (e.g. work/); pages show their label
-  label?: string; // the page's name, as shown on the tree
+  name: string; // used in the address (e.g. /#/work/artcenter)
+  label?: string; // the name shown on the tree, if different (folders get a trailing /)
   kind: 'folder' | 'file';
   href?: string; // files only
   children?: TreeNode[]; // folders only
@@ -31,6 +31,7 @@ export const tree: TreeNode = {
         },
         {
           name: 'artcenter',
+          label: 'ArtCenter',
           kind: 'folder',
           children: [{ name: 'mindra', label: 'Mindra', kind: 'file', href: '/work/mindra/' }],
         },

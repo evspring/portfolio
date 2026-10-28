@@ -246,3 +246,10 @@ What changed:
 - Folder kept lowercase (`artcenter/`) to match `work/` and `realtruck/`.
 - Bug caught on screenshot: on phones, opening the side folder swung the view so far that the `work/` label ran off screen. The camera now keeps the parent folder's label in view when it fits.
 - Overlap check across 8 screen sizes, now including `/#/work/artcenter`: 0 problems.
+
+**#25, Evan**
+> lets use ArtCenter as the capitalization
+
+What changed:
+- Folders can now have a display label like pages do. `artcenter/` shows as "ArtCenter/" on the tree, in the path at the top and in the no-JavaScript list; the address stays lowercase (`/#/work/artcenter`).
+- Overlap check across 8 screen sizes: 0 problems.

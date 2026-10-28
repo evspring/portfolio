@@ -253,3 +253,9 @@ What changed:
 What changed:
 - Folders can now have a display label like pages do. `artcenter/` shows as "ArtCenter/" on the tree, in the path at the top and in the no-JavaScript list; the address stays lowercase (`/#/work/artcenter`).
 - Overlap check across 8 screen sizes: 0 problems.
+
+**#26, Evan**
+> lets do RealTruck capitalization as well
+
+What changed:
+- `realtruck/` now shows as "RealTruck/" on the tree and in the path; address stays `/#/work/realtruck`. Overlap check: 0 problems.

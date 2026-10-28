@@ -22,6 +22,7 @@ export const tree: TreeNode = {
       children: [
         {
           name: 'realtruck',
+          label: 'RealTruck',
           kind: 'folder',
           children: [
             { name: 'sequence', label: 'Sequence', kind: 'file', href: '/work/sequence/' },

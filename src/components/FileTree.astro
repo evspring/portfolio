@@ -97,6 +97,8 @@ import { tree } from '../data/tree';
     translate: 0 -50%;
     text-shadow: 0 0 3px var(--color-paper), 0 0 3px var(--color-paper), 0 0 8px var(--color-paper);
   }
+  .tnode .label { transition: opacity 0.18s ease; }
+  .tnode .label.moving { opacity: 0; }
   .tnode.read-left .label { translate: -100% -50%; }
   .tnode.read-centre .label { translate: -50% -50%; }
   .tnode.shown { opacity: 1; pointer-events: auto; }
@@ -113,6 +115,7 @@ import { tree } from '../data/tree';
   type Pt = P & { tx: number; ty: number };
   type Box = { x0: number; x1: number; y0: number; y1: number };
   type Kind = 'trunk' | 'folder' | 'file';
+  type LabelSpot = { cls: string; dx: number; dy: number; box: Box };
   // A watercolour wash: many slightly different translucent copies of one shape,
   // in local coordinates around (0, 0). Where they overlap the paint gets denser,
   // so edges bleed softly and the middle pools, the way real washes do.
@@ -139,6 +142,8 @@ import { tree } from '../data/tree';
     crownSize: number;
     el: HTMLElement | null;
     box: Box | null;
+    // folders: label above the canopy while closed, beside it once open
+    spots?: { closed: LabelSpot; open: LabelSpot };
     kids: Limb[];
     grow: Tween;
     focus: Tween;
@@ -521,7 +526,7 @@ import { tree } from '../data/tree';
     const { x, y } = l.tip;
     // offsets of the label's anchor from the tip, and how it reads from there
     const h = l.crownSize / 2 + 2;
-    type Spot = { cls: string; dx: number; dy: number; box: Box };
+    type Spot = LabelSpot;
     const spot = (cls: string, dx: number, dy: number): Spot => {
       const x0 = cls === 'read-left' ? x + dx - lw : cls === 'read-centre' ? x + dx - lw / 2 : x + dx;
       return { cls, dx, dy, box: { x0, x1: x0 + lw, y0: y + dy - 8, y1: y + dy + 8 } };
@@ -532,14 +537,21 @@ import { tree } from '../data/tree';
     const under = spot('read-centre', 0, h + 10);
     // above the canopy but leaning outward, away from the stems in the middle
     const overOut = Math.cos(l.angle) < 0 ? spot('read-left', h, -h - 10) : spot('', -h, -h - 10);
-    // Folders: beside the lower corner of the canopy, clear of the stem below and the limbs above.
+    // Folders: above the canopy while closed. Once open, their branches grow up through that
+    // spot, so the label moves beside the lower corner of the canopy, clear of the stems.
     // Pages read outward; on phones every page label sits above its canopy so none run off screen.
     const leansLeft = Math.cos(l.angle) < -0.2;
     const outward = leansLeft ? [left, right] : [right, left];
-    const tries: Spot[] = isFolder
-      ? [right, left, under]
-      : [over, overOut, ...outward, under];
-    const pick = tries.find((t) => !blocked(t.box, l)) ?? tries[0];
+    const firstClear = (tries: Spot[]) => tries.find((t) => !blocked(t.box, l)) ?? tries[0];
+    let pick: Spot;
+    if (isFolder) {
+      const opened = firstClear([right, left, under]);
+      const closed = firstClear([over, overOut, opened]);
+      l.spots = { closed, open: opened };
+      pick = closed;
+    } else {
+      pick = firstClear([over, overOut, ...outward, under]);
+    }
     if (pick.cls) el.classList.add(pick.cls);
     l.box = pick.box;
     placed.push(pick.box);
@@ -568,11 +580,32 @@ import { tree } from '../data/tree';
     l.el = el;
   }
 
+  // Move a folder's label between its closed (above) and open (beside) spots, with a quick fade.
+  function moveFolderLabel(f: Limb, which: 'closed' | 'open', instant = false) {
+    const s = f.spots?.[which];
+    const label = f.el?.querySelector<HTMLElement>('.label');
+    if (!s || !label || f.box === s.box) return;
+    const i = placed.indexOf(f.box!);
+    if (i !== -1) placed[i] = s.box; else placed.push(s.box);
+    f.box = s.box;
+    const apply = () => {
+      f.el!.classList.remove('read-left', 'read-centre');
+      if (s.cls) f.el!.classList.add(s.cls);
+      label.style.left = `${Math.round(s.dx)}px`;
+      label.style.top = `${Math.round(s.dy)}px`;
+      label.classList.remove('moving');
+    };
+    if (instant) { apply(); return; }
+    label.classList.add('moving');
+    setTimeout(apply, 180);
+  }
+
   /* ---------- opening and closing ---------- */
   function openFolder(f: Limb, instant = false) {
     closeBelow(open.indexOf(f.parent!));
     open.push(f);
     f.el?.setAttribute('aria-expanded', 'true');
+    moveFolderLabel(f, 'open', instant);
     spawnKids(f, instant);
     refocus(instant);
   }
@@ -582,6 +615,7 @@ import { tree } from '../data/tree';
     while (open.length > index + 1) {
       const f = open.pop()!;
       f.el?.setAttribute('aria-expanded', 'false');
+      moveFolderLabel(f, 'closed');
       for (const kid of f.kids) {
         kid.dying = true;
         kid.grow.go(0, 0.4, easeIn);

@@ -228,3 +228,12 @@ What changed:
 
 What changed:
 - Every content page (all four case studies, About, Contact) now sits on plain paper; only the tree keeps the glowing sky. It's the default in `Base.astro`, so new pages get it automatically.
+
+## 28 Oct 2026
+
+**#23, Evan**
+> the work/ folder should be above its corresponding canopy until it is clicked on, once its clicked on the text can move to either side
+
+What changed:
+- Folder labels now sit above their canopy while closed. When opened, the branches grow up through that spot, so the label fades across to the side of the canopy (right, or left if that's blocked); closing fades it back above. Applies to `realtruck/` too.
+- Checked at 8 screen sizes with the overlap script: 0 problems. Clicked open and closed at 1440 and 390 and looked.

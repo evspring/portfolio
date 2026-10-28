@@ -267,3 +267,12 @@ What changed:
 - New project page "ID4 Dashboard" in `ArtCenter/`, next to Mindra, at `/work/id4-dashboard/`. Placeholder case study in `src/content/work/id4-dashboard.md` (client, role, year marked TODO).
 - Bug caught on screenshot: ID4 Dashboard's canopy grew into the faded RealTruck/ canopy beside it, and on phones its label ran into "RealTruck/". New branches only checked their own siblings. Now they also check every canopy and label already on the tree and lean outward until clear. Labels also keep 8px of air from their neighbours.
 - Overlap check now includes faded canopies too, across 8 screen sizes: 0 problems.
+
+**#28, Evan**
+> The sapling thats clicked on in the very beginning doesn't look very good, make it look more like a sapling and less like a twig
+
+What changed:
+- The pot's sprout (one thin stroke with three dots of leaf) is now a painted sapling: a tapered little trunk drawn the same way as the tree's stems (three outlines in stem and stem-deep), two side shoots, and pointed watercolour leaves in the three leaf tokens, gathering into a full crown on top. No new colours.
+- Hover: it stands up a touch and its leaves open outward.
+- Tried a faint mint haze behind the crown to hint at the canopy; it read as a bubble, so it's gone.
+- Pot button extended upward to cover the taller sapling. Screen-size check (including the pot not covering "Click the pot"): 0 problems; clicking still grows the tree.

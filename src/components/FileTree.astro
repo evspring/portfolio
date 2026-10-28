@@ -827,7 +827,11 @@ import { tree } from '../data/tree';
   const potLift = new Tween(0);
   const sprout = new Tween(0); // 0 resting, 1 perked up on hover
   let potWashes: { w: Wash; x: number; y: number }[] = [];
-  let sproutLeaves: { w: Wash; x: number; y: number; rot: number; grow: number }[] = [];
+  // The sapling waiting in the pot: a tapered little trunk, two side shoots, and pointed leaves
+  // gathering into a small crown, painted the same way as the tree it grows into.
+  type SapLeaf = { w: Wash; x: number; y: number; ang: number; open: number };
+  let sapStems: Path2D[][] = []; // each stem: three outlines painted over each other
+  let sapLeaves: SapLeaf[] = [];
   function buildPot() {
     const rnd = rngFrom(hash('pot'));
     const terra = C('pot'), light = C('pot-light'), shade = C('pot-shade'), line = C('pot-line'), soil = C('soil');
@@ -848,11 +852,87 @@ import { tree } from '../data/tree';
       { w: wash(blobShape(46, 2, 1, 0.12), soil, rnd, 10, 0.12, 0.05), x: 0, y: 2 }, // soil
       { w: wash(trap(-52, 52, 50, -50, 19, 22), line, rnd, 6, 0.08, 0.02), x: 0, y: 0 }, // shadow under the rim
     ];
-    sproutLeaves = [
-      { w: wash(blobShape(9, 2, 1, 0.45), LEAVES[0], rnd, 8, 0.16, 0.08), x: -9, y: -20, rot: -0.5, grow: 0 },
-      { w: wash(blobShape(10, 2, 1, 0.42), LEAVES[1], rnd, 8, 0.16, 0.08), x: 10, y: -27, rot: 0.45, grow: 0 },
-      { w: wash(blobShape(8, 2, 1, 0.45), LEAVES[0], rnd, 8, 0.16, 0.08), x: -6, y: -38, rot: -0.7, grow: 1 },
+    buildSapling(rnd);
+  }
+
+  function buildSapling(rnd: () => number) {
+    // a curve from a to b bending by `bend`, as a tapered outline from width w0 to w1
+    const taperStem = (a: P, b: P, bend: number, w0: number, w1: number) => {
+      const n = 14, pts: P[] = [], dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy);
+      const nx = -dy / len, ny = dx / len;
+      for (let i = 0; i <= n; i++) {
+        const t = i / n, sway = Math.sin(t * Math.PI) * bend;
+        pts.push({ x: a.x + dx * t + nx * sway, y: a.y + dy * t + ny * sway });
+      }
+      return [0, 1, 2].map((k) => {
+        const j = () => gauss(rnd) * 0.35;
+        const left: P[] = [], right: P[] = [];
+        pts.forEach((q, i) => {
+          const t = i / n, w = lerp(w0, w1, Math.pow(t, 0.8)) / 2 + j();
+          const q2 = pts[Math.min(i + 1, n)], q1 = pts[Math.max(i - 1, 0)];
+          const tx = q2.x - q1.x, ty = q2.y - q1.y, tl = Math.hypot(tx, ty) || 1;
+          const ox = (-ty / tl) * w, oy = (tx / tl) * w, shift = (k - 1) * 0.4;
+          left.push({ x: q.x + ox + shift, y: q.y + oy });
+          right.push({ x: q.x - ox + shift, y: q.y - oy });
+        });
+        return toPath([...left, pts[n], ...right.reverse()]);
+      });
+    };
+    sapStems = [
+      taperStem({ x: 0, y: 3 }, { x: -1, y: -64 }, 3.5, 7, 1.6), // trunk
+      taperStem({ x: -0.5, y: -26 }, { x: -17, y: -44 }, -2, 2.8, 1), // shoot, left
+      taperStem({ x: 0, y: -40 }, { x: 15, y: -54 }, 2, 2.4, 1), // shoot, right
     ];
+    // a pointed leaf, base at the origin, pointing along +x
+    const leafShape = (len: number, wide: number): P[] => {
+      const pts: P[] = [], n = 9;
+      for (let i = 0; i <= n; i++) { const t = i / n; pts.push({ x: len * t, y: -wide * Math.pow(Math.sin(Math.PI * t), 0.85) * (1 - 0.25 * t) }); }
+      for (let i = n - 1; i > 0; i--) { const t = i / n; pts.push({ x: len * t, y: wide * Math.pow(Math.sin(Math.PI * t), 0.85) * (1 - 0.25 * t) }); }
+      return pts;
+    };
+    const leaf = (x: number, y: number, deg: number, len: number, col: number, open = 1): SapLeaf => ({
+      w: wash(leafShape(len, len * 0.38), LEAVES[col], rnd, 8, 0.13, 0.06), x, y, ang: (deg * Math.PI) / 180, open,
+    });
+    sapLeaves = [
+      // along the trunk
+      leaf(0, -15, 200, 11, 0), leaf(0.5, -22, -20, 10, 1),
+      // left shoot
+      leaf(-17, -44, 195, 14, 1), leaf(-17, -44, 235, 13, 0), leaf(-17, -45, 270, 11, 2), leaf(-10, -38, 165, 10, 0, 0.6),
+      // right shoot
+      leaf(15, -54, -15, 14, 1), leaf(15, -54, -50, 13, 2), leaf(15, -55, -85, 11, 0), leaf(8, -48, 20, 10, 0, 0.6),
+      // the crown: a full fan of leaves at the top
+      leaf(-1, -64, 260, 16, 2), leaf(-1, -64, 285, 16, 1), leaf(-1, -63, 232, 15, 1),
+      leaf(-1, -63, 312, 15, 0), leaf(-1, -61, 205, 13, 0), leaf(-1, -61, 338, 13, 2),
+      leaf(-2, -58, 180, 10, 1, 0.7), leaf(0, -58, 0, 10, 0, 0.7),
+    ];
+  }
+
+  function paintSapling() {
+    const perk = sprout.v; // hover: stands up a touch and opens its leaves
+    ctx.save();
+    ctx.translate(0, 3);
+    ctx.scale(1, lerp(1, 1.08, perk));
+    ctx.translate(0, -3);
+    ctx.lineJoin = 'round';
+    for (const stem of sapStems) {
+      stem.forEach((path, i) => {
+        ctx.globalAlpha = i === 2 ? 0.42 : 0.34;
+        ctx.fillStyle = i === 2 ? STEM_DEEP : STEM;
+        ctx.fill(path);
+      });
+    }
+    for (const lf of sapLeaves) {
+      // leaves open outward from straight up on hover
+      const up = -Math.PI / 2;
+      let d = lf.ang - up;
+      d = Math.atan2(Math.sin(d), Math.cos(d));
+      ctx.save();
+      ctx.translate(lf.x, lf.y);
+      ctx.rotate(up + d * lerp(1, 1.12, perk));
+      drawWash(lf.w, 0, 0, lerp(1, 1.06, perk), 0.8 + 0.2 * lf.open);
+      ctx.restore();
+    }
+    ctx.restore();
   }
 
   function paintPot(cx: number, cy: number) {
@@ -864,26 +944,7 @@ import { tree } from '../data/tree';
     ctx.globalCompositeOperation = 'multiply';
     for (const p of potWashes) drawWash(p.w, p.x, p.y, 1, 1);
     if (!planted) {
-      // the sprout waiting in the soil; it stands up a little taller on hover
-      const h = lerp(30, 42, sprout.v);
-      ctx.globalAlpha = 0.7;
-      ctx.strokeStyle = STEM;
-      ctx.lineWidth = 2.2;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(0, 2);
-      ctx.quadraticCurveTo(4, -h * 0.5, -1, -h);
-      ctx.stroke();
-      for (const leaf of sproutLeaves) {
-        const show = leaf.grow ? sprout.v : 1;
-        if (show <= 0.01) continue;
-        const dy = leaf.y * lerp(1, 1.3, sprout.v);
-        ctx.save();
-        ctx.translate(leaf.x, dy);
-        ctx.rotate(leaf.rot);
-        drawWash(leaf.w, 0, 0, show, 1);
-        ctx.restore();
-      }
+      paintSapling();
     }
     ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1;
@@ -896,7 +957,7 @@ import { tree } from '../data/tree';
     potBtn.type = 'button';
     potBtn.className = 'pot-btn';
     const ps = POT_SCALE;
-    Object.assign(potBtn.style, { left: `${-64 * ps}px`, top: `${-56 * ps}px`, width: `${128 * ps}px`, height: `${156 * ps}px` });
+    Object.assign(potBtn.style, { left: `${-64 * ps}px`, top: `${-84 * ps}px`, width: `${128 * ps}px`, height: `${184 * ps}px` });
     const hover = (on: boolean) => sprout.go(on ? 1 : 0, 0.45);
     potBtn.addEventListener('pointerenter', () => hover(true));
     potBtn.addEventListener('pointerleave', () => hover(false));

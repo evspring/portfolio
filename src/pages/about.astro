@@ -9,9 +9,9 @@ import { treeLinkFor } from '../data/tree';
 */
 const portrait = { src: '/about/portrait.jpg', alt: 'Evan beside the trail sign for the Misen climbing path in Japan' };
 const photos = [
-  { src: undefined, alt: '' },
-  { src: undefined, alt: '' },
-  { src: undefined, alt: '' },
+  { src: '/about/hill.jpg', alt: 'A person walking up a bright green hill under a towering white cloud' },
+  { src: '/about/rocket.jpg', alt: 'A rocket silhouetted against a dark sky beside a glowing orange sun' },
+  { src: '/about/swimmers.jpg', alt: 'Two crocodiles swimming through painted turquoise water' },
 ];
 ---
 
@@ -50,7 +50,7 @@ const photos = [
         </p>
       </div>
       <div class="mt-12 grid grid-cols-3 gap-2 sm:gap-4">
-        {photos.map((p) => <PhotoSlot src={p.src} alt={p.alt} />)}
+        {photos.map((p) => <PhotoSlot ratio="3 / 2" src={p.src} alt={p.alt} />)}
       </div>
     </section>
 

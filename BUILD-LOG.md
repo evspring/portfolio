@@ -290,3 +290,11 @@ What changed:
 What changed:
 - Portrait added: `public/about/portrait.jpg`, cropped to the slot's 4:5 around Evan and the Misen climbing path sign (520×650 JPEG, 137 KB). Alt text describes it.
 - Checked About at 1440 and 390: photo sits beside the intro on desktop and below it on phones.
+
+**#31, Evan**
+> Here are some photos for the three empty spaces:
+
+What changed:
+- The three About photos are in: a walker on a green hill under a big cloud, a rocket against an orange sun, two crocodiles in painted turquoise water (`public/about/hill.jpg`, `rocket.jpg`, `swimmers.jpg`).
+- Photo row changed from 4:3 to 3:2, which is closer to all three originals, so less is cropped. Rocket and crocodile images cropped from the sides to 3:2; the hill photo was already 3:2.
+- Originals are small (512px wide for two of them), so on large high-density screens they're slightly soft. Larger originals would sharpen them.

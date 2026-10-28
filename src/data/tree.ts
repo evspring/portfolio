@@ -29,7 +29,11 @@ export const tree: TreeNode = {
             { name: 'husky-liners', label: 'Husky Liners', kind: 'file', href: '/work/husky-liners/' },
           ],
         },
-        { name: 'mindra', label: 'Mindra', kind: 'file', href: '/work/mindra/' },
+        {
+          name: 'artcenter',
+          kind: 'folder',
+          children: [{ name: 'mindra', label: 'Mindra', kind: 'file', href: '/work/mindra/' }],
+        },
       ],
     },
     { name: 'about', label: 'About', kind: 'file', href: '/about/' },

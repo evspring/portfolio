@@ -237,3 +237,12 @@ What changed:
 What changed:
 - Folder labels now sit above their canopy while closed. When opened, the branches grow up through that spot, so the label fades across to the side of the canopy (right, or left if that's blocked); closing fades it back above. Applies to `realtruck/` too.
 - Checked at 8 screen sizes with the overlap script: 0 problems. Clicked open and closed at 1440 and 390 and looked.
+
+**#24, Evan**
+> lets change the mindra folder, instead call it ArtCenter and have mindra as a project nested in the artcenter folder
+
+What changed:
+- `work/` now holds two folders: `realtruck/` (centre) and `artcenter/` (to the side), with Mindra inside `artcenter/`. Mindra's page URL is unchanged; its back link now returns to `/#/work/artcenter`.
+- Folder kept lowercase (`artcenter/`) to match `work/` and `realtruck/`.
+- Bug caught on screenshot: on phones, opening the side folder swung the view so far that the `work/` label ran off screen. The camera now keeps the parent folder's label in view when it fits.
+- Overlap check across 8 screen sizes, now including `/#/work/artcenter`: 0 problems.

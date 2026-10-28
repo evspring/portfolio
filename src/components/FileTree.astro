@@ -677,6 +677,11 @@ import { tree } from '../data/tree';
       }
       const pad = W < 700 ? 16 : 72, top = headerSpace(), bottom = 56;
       const vw = W - pad * 2, vh = H - top - bottom;
+      // keep the parent folder's label in view too (side folders swing the view), if it fits
+      const pb = f.parent?.box;
+      if (pb && Math.max(maxX, pb.x1) - Math.min(minX, pb.x0) <= vw) {
+        minX = Math.min(minX, pb.x0); maxX = Math.max(maxX, pb.x1);
+      }
       tx = maxX - minX <= vw ? (minX + maxX) / 2 - W / 2 : minX - pad;
       ty = maxY - minY <= vh ? (minY + maxY) / 2 - (top + vh / 2) : minY - top;
     }

@@ -288,5 +288,5 @@ What changed:
 > use this image for the picture of me in the "about me" section
 
 What changed:
-- Portrait added: `public/about/portrait.jpg`, cropped to the slot's 4:5 around Evan and the Misen climbing path sign (520×650, 90 KB-ish JPEG). Alt text describes it.
+- Portrait added: `public/about/portrait.jpg`, cropped to the slot's 4:5 around Evan and the Misen climbing path sign (520×650 JPEG, 137 KB). Alt text describes it.
 - Checked About at 1440 and 390: photo sits beside the intro on desktop and below it on phones.

@@ -34,7 +34,10 @@ export const tree: TreeNode = {
           name: 'artcenter',
           label: 'ArtCenter',
           kind: 'folder',
-          children: [{ name: 'mindra', label: 'Mindra', kind: 'file', href: '/work/mindra/' }],
+          children: [
+            { name: 'mindra', label: 'Mindra', kind: 'file', href: '/work/mindra/' },
+            { name: 'id4-dashboard', label: 'ID4 Dashboard', kind: 'file', href: '/work/id4-dashboard/' },
+          ],
         },
       ],
     },

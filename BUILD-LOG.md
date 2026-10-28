@@ -259,3 +259,11 @@ What changed:
 
 What changed:
 - `realtruck/` now shows as "RealTruck/" on the tree and in the path; address stays `/#/work/realtruck`. Overlap check: 0 problems.
+
+**#27, Evan**
+> create a new folder nested in the ArtCenter folder for a project called ID4 Dashboard
+
+What changed:
+- New project page "ID4 Dashboard" in `ArtCenter/`, next to Mindra, at `/work/id4-dashboard/`. Placeholder case study in `src/content/work/id4-dashboard.md` (client, role, year marked TODO).
+- Bug caught on screenshot: ID4 Dashboard's canopy grew into the faded RealTruck/ canopy beside it, and on phones its label ran into "RealTruck/". New branches only checked their own siblings. Now they also check every canopy and label already on the tree and lean outward until clear. Labels also keep 8px of air from their neighbours.
+- Overlap check now includes faded canopies too, across 8 screen sizes: 0 problems.

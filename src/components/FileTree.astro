@@ -466,16 +466,33 @@ import { tree } from '../data/tree';
     };
     const hits = (a: Box, b: Box) => a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0;
     const taken: Box[] = f.crownSize ? [boxOf(f, 8)] : [];
+    // canopies already on the tree (e.g. a sibling folder's, beside a side folder): lean away from them
+    const live = limbs.filter((o) => !o.dying && o !== f);
+    const others: Box[] = [
+      ...live.filter((o) => o.crownSize).map((o) => boxOf(o, 6)),
+      ...live.filter((o) => o.box).map((o) => o.box!), // their labels too
+    ];
+    // where a kid's label will most likely sit: centred just above its canopy
+    const labelZone = (l: Limb): Box => {
+      const lw = (l.node.label ?? l.node.name).length * 6.7 + 14, h = l.crownSize / 2;
+      return { x0: l.tip.x - lw / 2 - 8, x1: l.tip.x + lw / 2 + 8, y0: l.tip.y - h - 20, y1: l.tip.y - h };
+    };
+    const outward = Math.sign(f.tip.tx) || 1; // a side folder's kids lean further out, not back in
     const order = kids.map((_, i) => i).sort((a, b) => Math.abs(slots[a]) - Math.abs(slots[b]));
     const made: Limb[] = [];
     for (const i of order) {
       const node = kids[i];
-      let l: Limb, stretch = 1;
+      let l: Limb, stretch = 1, lean = 0, tries = 0, crowded = false, clash = false;
       do {
         l = makeLimb(node, node.kind === 'folder' ? 'folder' : 'file', f.depth + 1, `${f.key}/${node.name}`, f,
-          { x: f.tip.x, y: f.tip.y }, base + slots[i], Math.abs(slots[i]) < 0.2, stretch);
-        stretch += 0.06;
-      } while (taken.some((t) => hits(boxOf(l, 4), t)) && stretch < 1.8);
+          { x: f.tip.x, y: f.tip.y }, base + slots[i] + lean, Math.abs(slots[i]) < 0.2, stretch);
+        const b = boxOf(l, 4);
+        clash = taken.some((t) => hits(b, t));
+        const z = labelZone(l);
+        crowded = others.some((t) => hits(b, t) || hits(z, t));
+        if (clash) stretch = Math.min(stretch + 0.06, 1.8);
+        if (crowded) lean += 0.05 * outward;
+      } while ((clash || crowded) && ++tries < 30);
       taken.push(boxOf(l, 4));
       made[i] = l;
     }
@@ -504,7 +521,8 @@ import { tree } from '../data/tree';
     const selfCrown = placed.find((q) => q.x0 === self.tip.x - self.crownSize / 2 && q.y0 === self.tip.y - self.crownSize / 2);
     for (const q of placed) {
       if (q === selfCrown) continue;
-      if (r.x0 < q.x1 && r.x1 > q.x0 && r.y0 < q.y1 && r.y1 > q.y0) return true;
+      // a little air on each side so neighbouring labels never read as one
+      if (r.x0 - 8 < q.x1 && r.x1 + 8 > q.x0 && r.y0 < q.y1 && r.y1 > q.y0) return true;
     }
     for (const l of limbs) {
       if (l.dying) continue;

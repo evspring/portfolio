@@ -298,3 +298,9 @@ What changed:
 - The three About photos are in: a walker on a green hill under a big cloud, a rocket against an orange sun, two crocodiles in painted turquoise water (`public/about/hill.jpg`, `rocket.jpg`, `swimmers.jpg`).
 - Photo row changed from 4:3 to 3:2, which is closer to all three originals, so less is cropped. Rocket and crocodile images cropped from the sides to 3:2; the hill photo was already 3:2.
 - Originals are small (512px wide for two of them), so on large high-density screens they're slightly soft. Larger originals would sharpen them.
+
+**#32, Evan**
+> the rocket is my own animation work, the crocodiles are from a film I worked on
+
+What changed:
+- Photo descriptions updated: the rocket is a still from Evan's own animation; the crocodiles are a still from a film he worked on.

@@ -276,3 +276,10 @@ What changed:
 - Hover: it stands up a touch and its leaves open outward.
 - Tried a faint mint haze behind the crown to hint at the canopy; it read as a bubble, so it's gone.
 - Pot button extended upward to cover the taller sapling. Screen-size check (including the pot not covering "Click the pot"): 0 problems; clicking still grows the tree.
+
+**#29, Evan**
+> I have a domain, evanspringer.com, through wix that I want to connect to this. How can I do that?
+
+What changed:
+- `site` in astro.config.mjs set to https://evanspringer.com.
+- Gave Evan the steps: add the domain to Cloudflare, switch the nameservers in Wix to Cloudflare's, then attach evanspringer.com and www to the Pages project.

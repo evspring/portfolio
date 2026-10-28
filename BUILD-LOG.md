@@ -283,3 +283,10 @@ What changed:
 What changed:
 - `site` in astro.config.mjs set to https://evanspringer.com.
 - Gave Evan the steps: add the domain to Cloudflare, switch the nameservers in Wix to Cloudflare's, then attach evanspringer.com and www to the Pages project.
+
+**#30, Evan**
+> use this image for the picture of me in the "about me" section
+
+What changed:
+- Portrait added: `public/about/portrait.jpg`, cropped to the slot's 4:5 around Evan and the Misen climbing path sign (520×650, 90 KB-ish JPEG). Alt text describes it.
+- Checked About at 1440 and 390: photo sits beside the intro on desktop and below it on phones.

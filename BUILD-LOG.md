@@ -371,3 +371,9 @@ What changed:
 - Film & storytelling merged into the flowers tile: "Art & film", titled "Art, film & storytelling", with the rocket and crocodile stills side by side and both paragraphs. Tiles can now hold one photo or a pair. The lily pads stay as decoration.
 - Tree label is now "Who am I".
 - Fixed: on phones the flowers sit at the bottom edge, so their label fell off the painting; labels now go above a feature when there's no room below. All three tiles open and close at 320–1440, all labels inside the painting.
+
+**#42, Evan**
+> Fix the lilypads on the bottom right of the pond,  they're too stacked on top of each other and it looks weird
+
+What changed:
+- Lily pads no longer pile up: each one finds a spot clear of every other pad (they can just touch at the edges) and well inside the shore. Bottom-right group cut from 9 pads to 6 and spread wider; the smaller groups use the same spacing. Checked at 1440 and 390.

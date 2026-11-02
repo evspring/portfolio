@@ -326,15 +326,33 @@ function paintScene() {
   sc.clearRect(0, 0, W, H);
   sc.globalCompositeOperation = 'source-over';
   const lil = feat.lilies;
-  for (let i = 0; i < 9; i++) {
-    const p = inEllipse(lil.x, lil.y, lil.r * 0.85, lil.r * 0.7);
-    pad(p.x, p.y, lil.r * (0.2 + rnd() * 0.14), i % 3 === 0);
+  // a loose group: each pad finds a spot clear of the others, so they touch at most at the edges
+  const placedPads: Feature[] = [];
+  const DPRs = paint.width / W, inner = pathOf(shrink(water, 0.86, centre));
+  const wet = (p: P) => pc.isPointInPath(inner, p.x * DPRs, p.y * DPRs); // well inside the shore
+  for (let i = 0; i < 6; i++) {
+    const r = lil.r * (0.22 + rnd() * 0.12);
+    for (let t = 0; t < 40; t++) {
+      const p = inEllipse(lil.x, lil.y, lil.r * 1.05, lil.r * 0.85);
+      if (wet(p) && placedPads.every((q) => Math.hypot(p.x - q.x, p.y - q.y) > (r + q.r) * 0.92)) {
+        placedPads.push({ x: p.x, y: p.y, r });
+        pad(p.x, p.y, r, i % 3 === 0);
+        break;
+      }
+    }
   }
   for (const c of L.pads) {
     const n = 2 + Math.floor(rnd() * 3);
     for (let i = 0; i < n; i++) {
-      const p = inEllipse(c[0] * W, c[1] * H, c[2] * W, c[2] * W * 0.7);
-      pad(p.x, p.y, M * (0.018 + rnd() * 0.014) * (wide ? 1 : 1.2), rnd() < 0.25);
+      const r = M * (0.018 + rnd() * 0.014) * (wide ? 1 : 1.2);
+      for (let t = 0; t < 40; t++) {
+        const p = inEllipse(c[0] * W, c[1] * H, c[2] * W * 1.3, c[2] * W);
+        if (wet(p) && placedPads.every((q) => Math.hypot(p.x - q.x, p.y - q.y) > (r + q.r) * 0.92)) {
+          placedPads.push({ x: p.x, y: p.y, r });
+          pad(p.x, p.y, r, rnd() < 0.25);
+          break;
+        }
+      }
     }
   }
   const inWater = wide ? [[0.3, 0.55], [0.75, 0.48]] : [[0.22, 0.6], [0.8, 0.5]];

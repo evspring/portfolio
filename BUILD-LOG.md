@@ -457,3 +457,9 @@ What changed:
 
 What changed:
 - The root of the path now reads "Evan" (e.g. Evan / Work / RealTruck). Address unchanged.
+
+**#55, Evan**
+> actually, lets keep all the "file" names lowercase instead, so evan, work, realtruck, ect...
+
+What changed:
+- Folder display labels removed: the tree and path show evan, work/, realtruck/, artcenter/ again. Page names (Sequence, About…) unchanged. Folders can still take a label if wanted later. Overlap check: 0 problems.

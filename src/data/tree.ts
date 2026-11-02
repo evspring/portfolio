@@ -14,17 +14,14 @@ export const EMAIL = 'evan.a.springer@gmail.com';
 
 export const tree: TreeNode = {
   name: 'evan',
-  label: 'Evan',
   kind: 'folder',
   children: [
     {
       name: 'work',
-      label: 'Work',
       kind: 'folder',
       children: [
         {
           name: 'realtruck',
-          label: 'RealTruck',
           kind: 'folder',
           children: [
             { name: 'sequence', label: 'Sequence', kind: 'file', href: '/work/sequence/' },
@@ -34,7 +31,6 @@ export const tree: TreeNode = {
         },
         {
           name: 'artcenter',
-          label: 'ArtCenter',
           kind: 'folder',
           children: [
             { name: 'mindra', label: 'Mindra', kind: 'file', href: '/work/mindra/' },

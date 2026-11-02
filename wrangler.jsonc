@@ -1,0 +1,9 @@
+// Cloudflare deploys this site as static files only: no server code.
+// The build (npm run build) writes the site to dist/, and Cloudflare serves it from there.
+{
+  "name": "portfolio",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist"
+  }
+}

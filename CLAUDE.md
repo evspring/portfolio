@@ -16,7 +16,7 @@ Read DESIGN-BRIEF.md before making design decisions. The one line in it beats an
 ## Never
 
 - Commit secrets, API keys or `.env` files, or print them in output.
-- Deploy as a Cloudflare Worker. This is a Cloudflare Pages static site.
+- Add server code. Cloudflare serves this as static files only (a Worker with static assets, set up in `wrangler.jsonc`): no Worker script, no adapter.
 - Add new colour. The home page uses only the watercolour tokens (paper, stem, leaves, pot) in `global.css`; the Sequence case study has the light strip.
 - Copy anything from Gris. It's a style reference only: no characters, scenes or shapes lifted from the game.
 - Add anything to the home page outside the tree beyond the name, path and item count.

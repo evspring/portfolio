@@ -1,12 +1,12 @@
 # Evan's portfolio
 
-Static site built with Astro 7 and Tailwind CSS 4, hosted on Cloudflare Pages.
+Static site built with Astro 7 and Tailwind CSS 4, hosted on Cloudflare as static files (see `wrangler.jsonc`). Every push to main rebuilds and deploys.
 
 ```sh
 npm install
 npm run dev      # local site at http://localhost:4321
 npm run build    # static output in dist/
-npm run deploy   # build and push to Cloudflare Pages (needs `npx wrangler login` once)
+npm run deploy   # build and deploy by hand (needs `npx wrangler login` once); pushes to main deploy on their own
 ```
 
 - Design decisions: [DESIGN-BRIEF.md](DESIGN-BRIEF.md)

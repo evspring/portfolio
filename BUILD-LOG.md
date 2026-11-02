@@ -350,3 +350,15 @@ What changed:
 - Reeds with cattails at the shore, more trees and bushes from above around the meadow, the flower patch on the bank.
 - Tuned on screenshots: water first too dark (lightened), rocks read black (now painted pale over the water), reeds read as dark spikes (lightened), bank a hard dark band (now only the shore ring, blurred), then water too close to the grass (deepened a touch).
 - Checks: all four tiles open and close at 1440 and 390; no sideways scroll at 320–1440; ~19ms per frame with the pond running vs ~16ms on a still page.
+
+**#37–39, Evan**
+> Ok how can I view this in my browser?
+> Ok I'm on this step but I'm confused where to go
+> this is what I'm seeing
+
+(Screenshot: the "portfolio" project's Connect to evanspringer.com dialog with "already has externally managed DNS records"; "Latest build failed".)
+
+What changed:
+- The Cloudflare project was created as a Worker (the dashboard's current default), not Pages, and its builds were failing: a Worker deploy needs a config telling it where the built site is. Added `wrangler.jsonc` (name "portfolio", static assets from `dist/`, no server code). Checked with `wrangler deploy --dry-run`: reads all 24 files.
+- `npm run deploy` now uses `wrangler deploy`. CLAUDE.md rule, README and astro.config comment updated: static files only, no server code.
+- Told Evan to delete the A/AAAA/CNAME records Cloudflare copied from Wix for the root and www (keeping MX/TXT for email), then add the domain again.

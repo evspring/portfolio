@@ -424,3 +424,11 @@ What changed:
 
 What changed:
 - Outdoors card text replaced with Evan's wording, word for word.
+
+**#50, Evan**
+> Add this photo to the outdoors tab and move the photo from the Who Am I section to the outdoors tab. Remove the current Outdoors photo.
+
+What changed:
+- New photo `public/about/hike-selfie.jpg` (1400px, from Evan's original).
+- Outdoors card now shows the hike selfie and the Misen trail portrait side by side, square crops framed on Evan. Hill photo removed from the card and the repo.
+- Who am I is now a text-only card (cards can have no photo).

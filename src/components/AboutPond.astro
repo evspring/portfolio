@@ -36,8 +36,9 @@ export interface Tile {
   icon: IconName; // beside the title: the feature in the painting that opens it
   tags: { icon: IconName; text: string }[]; // a row of little icon chips under the title
   // one photo, or two side by side; `tall` puts a single photo in a column beside the text
-  photos: { src: string; alt: string; position?: string }[];
+  photos: { src: string; alt: string; position?: string }[]; // none for a text-only card
   tall?: boolean;
+  ratio?: string; // aspect ratio for the photos, if not the default
   paras: string[];
 }
 const svg = (name: IconName, cls: string) =>
@@ -63,9 +64,11 @@ const inline = `(function(){${code}})();`;
 <div class="tiles">
   {tiles.map((t) => (
     <dialog class:list={['tile', { tall: t.tall }]} id={`tile-${t.id}`} aria-labelledby={`tile-${t.id}-title`}>
-      <div class:list={['tile-photos', { pair: t.photos.length > 1 }]}>
-        {t.photos.map((ph) => <img src={ph.src} alt={ph.alt} style={ph.position ? `object-position:${ph.position}` : undefined} loading="lazy" />)}
-      </div>
+      {t.photos.length > 0 && (
+        <div class:list={['tile-photos', { pair: t.photos.length > 1 }]}>
+          {t.photos.map((ph) => <img src={ph.src} alt={ph.alt} style={[ph.position && `object-position:${ph.position}`, t.ratio && `aspect-ratio:${t.ratio}`].filter(Boolean).join(';') || undefined} loading="lazy" />)}
+        </div>
+      )}
       <div class="tile-body">
         <div class="tile-head">
           <span class="tile-icon" set:html={svg(t.icon, '')} />

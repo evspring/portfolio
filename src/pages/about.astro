@@ -9,9 +9,9 @@ import { treeLinkFor } from '../data/tree';
 */
 const tiles: Tile[] = [
   {
-    id: 'me', feature: 'tree', label: 'Who am I', title: "Hi, I'm Evan", icon: 'sprout', tall: true,
+    id: 'me', feature: 'tree', label: 'Who am I', title: "Hi, I'm Evan", icon: 'sprout',
     tags: [{ icon: 'pen', text: 'UX/UI design' }, { icon: 'bulb', text: 'Cognitive Science' }, { icon: 'compass', text: 'Problem solver' }],
-    photos: [{ src: '/about/portrait.jpg', alt: 'Evan beside the trail sign for the Misen climbing path in Japan', position: '50% 30%' }],
+    photos: [],
     paras: [
       "I'm a UX/UI designer with a background in Cognitive Science.",
       'When it comes to design, my philosophy has always been that of a problem solver. I find that every individual tells a story, and every interface is a unique journey. I find joy in understanding the simple things during that journey: what people enjoy, how they perceive their experiences, and what they think.',
@@ -20,7 +20,11 @@ const tiles: Tile[] = [
   {
     id: 'outdoors', feature: 'kayak', label: 'Outdoors', title: 'Outdoors', icon: 'kayak',
     tags: [{ icon: 'mountain', text: 'Hiking' }, { icon: 'fish', text: 'Fishing' }, { icon: 'camera', text: 'Photography' }, { icon: 'book', text: 'Sci-fi books' }],
-    photos: [{ src: '/about/hill.jpg', alt: 'A person walking up a bright green hill under a towering white cloud' }],
+    ratio: '1 / 1',
+    photos: [
+      { src: '/about/hike-selfie.jpg', alt: 'Evan giving a thumbs up on a rocky hilltop trail above the sea', position: '35% 50%' },
+      { src: '/about/portrait.jpg', alt: 'Evan beside the trail sign for the Misen climbing path in Japan', position: '50% 35%' },
+    ],
     paras: [
       'You can often catch me outdoors hiking and taking photos. Some of my favorite trails are in the Marin Headlands, where I often hike with friends or solo when I want some peace and quiet.',
       "When I'm not on a trail, you can find me out on the water in a canoe, fishing somewhere in Northern California, or curled up with one of my favorite sci-fi books.",

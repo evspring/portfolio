@@ -99,10 +99,10 @@ function layout(): Layout {
   wide = W > H;
   // where everything sits, as fractions of the painting
   const L: Layout = wide
-    ? { meadow: [0.5, 0.5, 0.47, 0.45], pond: [0.53, 0.52, 0.3, 0.33], tree: [0.16, 0.28, 0.075], tree2: [0.87, 0.2, 0.05],
+    ? { meadow: [0.5, 0.5, 0.47, 0.4], pond: [0.53, 0.52, 0.3, 0.33], tree: [0.16, 0.28, 0.075], tree2: [0.87, 0.2, 0.05],
         bushes: [[0.1, 0.7, 0.03], [0.24, 0.12, 0.022], [0.91, 0.52, 0.026], [0.36, 0.9, 0.024]],
         flowers: [0.82, 0.82, 0.07], lilies: [0.66, 0.66, 0.07], pads: [[0.4, 0.33, 0.035], [0.71, 0.36, 0.03], [0.38, 0.7, 0.03]] }
-    : { meadow: [0.5, 0.5, 0.47, 0.47], pond: [0.5, 0.52, 0.38, 0.27], tree: [0.25, 0.13, 0.12], tree2: [0.84, 0.12, 0.08],
+    : { meadow: [0.5, 0.5, 0.46, 0.42], pond: [0.5, 0.52, 0.38, 0.27], tree: [0.25, 0.15, 0.12], tree2: [0.84, 0.14, 0.08],
         bushes: [[0.1, 0.78, 0.05], [0.9, 0.42, 0.04], [0.33, 0.9, 0.04]],
         flowers: [0.74, 0.9, 0.12], lilies: [0.66, 0.6, 0.1], pads: [[0.3, 0.42, 0.06], [0.64, 0.38, 0.05]] };
   const [px, py, prx, pry] = L.pond;
@@ -217,7 +217,7 @@ function paintScene() {
 
   /* the meadow the pond sits in */
   const [mx, my, mrx, mry] = L.meadow;
-  const meadow = blobPts(mx * W, my * H, mrx * W, mry * H, 0.14, 60);
+  const meadow = blobPts(mx * W, my * H, mrx * W, mry * H, 0.1, 60);
   soft(3, () => {
     wash(meadow, MINT, 4, 0.38, 0.05);
     for (let i = 0; i < 26; i++) {

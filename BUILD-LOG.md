@@ -377,3 +377,10 @@ What changed:
 
 What changed:
 - Lily pads no longer pile up: each one finds a spot clear of every other pad (they can just touch at the edges) and well inside the shore. Bottom-right group cut from 9 pads to 6 and spread wider; the smaller groups use the same spacing. Checked at 1440 and 390.
+
+**#43, Evan**
+> Lets space the pond a bit further down from the text, also the top of the painting gets cut off
+
+What changed:
+- More space above the pond (48px on phones, 64px on larger screens, up from 24/8).
+- The meadow reached the canvas edge, so its top was sliced flat. Meadow made a little shorter and less ragged, and the phone trees moved down a touch. Checked by reading the canvas's edge pixels: nothing painted on any edge at 390, 820 or 1440.

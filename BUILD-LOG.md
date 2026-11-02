@@ -411,3 +411,9 @@ What changed:
 
 What changed:
 - Art & film tags are now "3D Animation" (brush) and "Content Creation" (play button).
+
+**#48, Evan**
+> For outdoors, you can add some text about my favorite trails in the Marin Headlands and going fishing in northern california in a canoe
+
+What changed:
+- Outdoors card placeholder replaced: favorite trails in the Marin Headlands; canoe fishing in Northern California; folded the sci-fi line in. Added a "Fishing" tag with a new fish icon. No placeholders left on the About page. Card still fits on screen at 390×700 and 1440.

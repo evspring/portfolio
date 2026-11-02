@@ -451,3 +451,9 @@ What changed:
 
 What changed:
 - `work/` now shows as "Work/" on the tree and "Work" in the path, matching RealTruck/ and ArtCenter/. Address stays `/#/work`. Overlap check: 0 problems.
+
+**#54, Evan**
+> Lets change it to Evan to match
+
+What changed:
+- The root of the path now reads "Evan" (e.g. Evan / Work / RealTruck). Address unchanged.

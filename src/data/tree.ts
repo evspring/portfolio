@@ -14,6 +14,7 @@ export const EMAIL = 'evan.a.springer@gmail.com';
 
 export const tree: TreeNode = {
   name: 'evan',
+  label: 'Evan',
   kind: 'folder',
   children: [
     {

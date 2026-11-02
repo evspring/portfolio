@@ -417,3 +417,10 @@ What changed:
 
 What changed:
 - Outdoors card placeholder replaced: favorite trails in the Marin Headlands; canoe fishing in Northern California; folded the sci-fi line in. Added a "Fishing" tag with a new fish icon. No placeholders left on the About page. Card still fits on screen at 390×700 and 1440.
+
+**#49, Evan**
+> Let's change it to this: You can often catch me outdoors hiking and taking photos. Some of my favorite trails are in the Marin Headlands, where I often hike with friends or solo when I want some peace and quiet.
+> When I’m not on a trail, you can find me out on the water in a canoe, fishing somewhere in Northern California, or curled up with one of my favorite sci-fi books.
+
+What changed:
+- Outdoors card text replaced with Evan's wording, word for word.

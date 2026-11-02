@@ -1,63 +1,62 @@
 ---
 import Base from '../layouts/Base.astro';
-import PhotoSlot from '../components/PhotoSlot.astro';
-import AboutBranches from '../components/AboutBranches.astro';
+import AboutPond, { type Tile } from '../components/AboutPond.astro';
 import { treeLinkFor } from '../data/tree';
 
 /*
-  Photos: drop files into public/about/ and fill in `src` and `alt` below.
-  e.g. { src: '/about/portrait.jpg', alt: 'Evan on a trail' }
+  The About page is a painting of a pond. Each feature opens a tile: a photo, then text.
+  Photos live in public/about/. Lines starting "Placeholder" are still to be written.
 */
-const portrait = { src: '/about/portrait.jpg', alt: 'Evan beside the trail sign for the Misen climbing path in Japan' };
-const photos = [
-  { src: '/about/hill.jpg', alt: 'A person walking up a bright green hill under a towering white cloud' },
-  { src: '/about/rocket.jpg', alt: 'A still from my own animation: a rocket silhouetted against a dark sky beside a glowing orange sun' },
-  { src: '/about/swimmers.jpg', alt: 'A still from a film I worked on: two crocodiles swimming through painted turquoise water' },
+const tiles: Tile[] = [
+  {
+    id: 'me', feature: 'tree', label: 'About me', title: "Hi, I'm Evan",
+    img: '/about/portrait.jpg', alt: 'Evan beside the trail sign for the Misen climbing path in Japan', position: '50% 25%',
+    paras: [
+      "I'm a UX/UI designer with a background in Cognitive Science.",
+      'When it comes to design, my philosophy has always been that of a problem solver. I find that every individual tells a story, and every interface is a unique journey. I find joy in understanding the simple things during that journey: what people enjoy, how they perceive their experiences, and what they think.',
+    ],
+  },
+  {
+    id: 'outdoors', feature: 'kayak', label: 'Outdoors', title: 'Outdoors',
+    img: '/about/hill.jpg', alt: 'A person walking up a bright green hill under a towering white cloud',
+    paras: [
+      'You can often catch me outdoors hiking and taking photos, or reading my favorite sci-fi books.',
+      'Placeholder: a few lines about a favorite trail, a trip, or time out on the water.',
+    ],
+  },
+  {
+    id: 'art', feature: 'flowers', label: 'Art & animation', title: 'Art & animation',
+    img: '/about/rocket.jpg', alt: 'A still from my own animation: a rocket silhouetted against a dark sky beside a glowing orange sun',
+    paras: [
+      "For most of my life I've defined myself as a dedicated storyteller and artist. From practicing 3D animation as a high school student to building a community through film in college, I'm always creating and looking for something new.",
+    ],
+  },
+  {
+    id: 'film', feature: 'lilies', label: 'Film & stories', title: 'Film & storytelling',
+    img: '/about/swimmers.jpg', alt: 'A still from a film I worked on: two crocodiles swimming through painted turquoise water',
+    paras: [
+      "I'm an avid content creator. I've always had a passion for telling stories and use YouTube to create, produce, and share my stories online. Over the past two years I've built an online community of over 75,000 people through storytelling and content creation, and it's greatly impacted how I approach design today.",
+    ],
+  },
 ];
 ---
 
 <Base title="About — Evan Springer" back={treeLinkFor('/about/')} plain>
-  <article class="relative isolate pt-24 sm:pt-32">
-    <div class="grid gap-10 sm:grid-cols-[minmax(0,1fr)_15rem] sm:items-start sm:gap-14">
-      <div>
-        <h1 class="text-2xl font-medium tracking-[-0.02em]">About</h1>
-        <div class="mt-10 max-w-[60ch] space-y-5 text-lg leading-relaxed">
-          <p>I'm Evan, a UX/UI designer with a background in Cognitive Science.</p>
-          <p>
-            When it comes to design, my philosophy has always been that of a problem solver. I find
-            that every individual tells a story, and every interface is a unique journey. I find joy
-            in understanding the simple things during that journey: what people enjoy, how they
-            perceive their experiences, and what they think.
-          </p>
-        </div>
-      </div>
-      <PhotoSlot ratio="4 / 5" src={portrait.src} alt={portrait.alt} class="max-w-[15rem] sm:mt-[4.5rem]" />
+  <article class="pt-24 sm:pt-32">
+    <h1 class="text-2xl font-medium tracking-[-0.02em]">About</h1>
+    <p class="mt-10 max-w-[60ch] text-lg leading-relaxed">I'm Evan, a UX/UI designer with a background in Cognitive Science.</p>
+    <p class="pond-hint mt-2 text-quiet">Click around the pond to find out more.</p>
+
+    <div class="mt-6 sm:mt-2">
+      <AboutPond tiles={tiles} />
     </div>
 
-    <section class="mt-16 sm:mt-20">
-      <h2 class="text-lg font-medium">My inspirations and interests</h2>
-      <div class="mt-5 max-w-[60ch] space-y-5 text-lg leading-relaxed">
-        <p>
-          For most of my life I've defined myself as a dedicated storyteller and artist. From
-          practicing 3D animation as a high school student to building a community through film in
-          college, I'm always creating and looking for something new. In addition to art, you can
-          often catch me outdoors hiking and taking photos, or reading my favorite sci-fi books!
-        </p>
-        <p>
-          I'm an avid content creator. I've always had a passion for telling stories and use YouTube
-          to create, produce, and share my stories online. Over the past two years I've built an
-          online community of over 75,000 people through storytelling and content creation, and
-          it's greatly impacted how I approach design today.
-        </p>
-      </div>
-      <div class="mt-12 grid grid-cols-3 gap-2 sm:gap-4">
-        {photos.map((p) => <PhotoSlot ratio="3 / 2" src={p.src} alt={p.alt} />)}
-      </div>
-    </section>
-
-    <p class="mt-20 text-lg">
+    <p class="mt-10 text-lg">
       <a href="/contact/" class="underline decoration-rule underline-offset-4 hover:decoration-ink">Get in touch</a>
     </p>
-    <AboutBranches />
   </article>
 </Base>
+
+<style>
+  :global(html:not(.js)) .pond-hint { display: none; }
+</style>

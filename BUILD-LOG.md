@@ -322,3 +322,18 @@ What changed:
 - Phones and tablets, where the text runs into the trunk's path: the trunk is measured against where the text actually ends, and only drawn when it clears by 24px. Otherwise branches stay under the row and the portrait gets its own sprig.
 - Drawn while the page is parsed (TypeScript in `about-branches.ts`, compiled at build time and inlined after the canvas), so it's there in the first frame and pans in with the page. Redraws on resize and when fonts settle.
 - First pass's canopy washes read as flat grey-green frames and the bough looked like a pipe; replaced with uneven foliage clumps and wobbling, sagging branches. Foliage was cut off at the content edge; the canvas now paints up to 48px past it, never past the page edge. No sideways scroll at 320–1440.
+
+**#35, Evan**
+> Ok I don't like that. Lets instead go for a top down painting. Similar to the video linked here. Have it be a pond with flowers/trees nearby. Put a kayak in as well. Make it so that clicking on features of the painting opens tiles that detail the about me content, like a picture followed with some text that can be placeholder for now.
+>
+> here is the video
+
+(Reference attached: lifeoflagan, "Kayaks on the water".)
+
+What changed:
+- Branches removed (`AboutBranches`). Studied the reference: a free-floating watercolour pond on paper with a ragged edge; light mottled washes, darker pools, white glints; loose ink squiggles over the water; greenery at the edges scribbled with ink; top-down kayaks with ink outlines, paddlers and two-bladed paddles, drifting and turning with ripple rings.
+- New `AboutPond` (painting in `about-pond.ts`, compiled and inlined so it's drawn before the first frame): pond, greenery top/bottom/side, a tree from above, a flower patch, lily pads with flowers, and a kayak. Only the site's tokens: the water is mint/teal/deep, the kayak is the pot's terracotta. Washes softened by painting at low resolution and blurring on composite; pigment grain; darker drying edge.
+- The kayak wanders, steers toward the pointer over the water, and paddles (faster) to wherever the water is clicked; paddle strokes sweep with its speed; ripple rings off the hull and little splashes at the blades. Pauses off screen; holds still with reduced motion.
+- Features open tiles (native `<dialog>`: photo, then text; grows from the feature; Escape, Close or a click outside closes): tree → "Hi, I'm Evan" (portrait), kayak → Outdoors (hill), flowers → Art & animation (rocket), lily pads → Film & storytelling (crocodiles). Uses Evan's existing About text; one placeholder line in Outdoors. Labels sit beside each feature.
+- Without JavaScript the painting hides and the tiles show as a list.
+- Caught on screenshot: first pass far too dark and hard-edged, things cut off at the painting's edge, tree unreadable; pond outline polygonal; glints like teeth; ink clumps like spiders; tiles stuck top-left (Tailwind's reset removes dialog centring); kayak barely responded to clicks; tile text clipped without JavaScript. All fixed. No sideways scroll at 320–1920.

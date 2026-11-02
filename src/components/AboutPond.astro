@@ -1,0 +1,135 @@
+---
+/*
+  The About page's pond painting with its tiles. Each tile belongs to a feature in the painting
+  (tree, kayak, flowers, lily pads); clicking the feature opens the tile: a photo, then text.
+
+  The painting code is in about-pond.ts; it's compiled here and inlined at the end of the
+  painting, so it draws while the page is parsed. Without JavaScript the painting is hidden
+  and the tiles show as a plain list.
+*/
+import { transformWithOxc } from 'vite';
+import source from './about-pond.ts?raw';
+
+export interface Tile {
+  id: string;
+  feature: 'tree' | 'kayak' | 'flowers' | 'lilies';
+  label: string; // shown beside the feature
+  title: string;
+  img: string;
+  alt: string;
+  position?: string; // object-position for the photo crop
+  paras: string[];
+}
+interface Props { tiles: Tile[] }
+const { tiles } = Astro.props;
+
+const { code } = await transformWithOxc(source, 'about-pond.ts', { lang: 'ts' });
+const inline = `(function(){${code}})();`;
+---
+
+<div class="pond" role="group" aria-label="A painting of a pond. Each part opens a little more about me.">
+  <canvas class="pond-paint" aria-hidden="true"></canvas>
+  <canvas class="pond-live" aria-hidden="true"></canvas>
+  {tiles.map((t) => (
+    <button type="button" class="pond-spot" data-feature={t.feature} data-tile={`tile-${t.id}`} aria-haspopup="dialog">
+      <span class="pond-label">{t.label}</span>
+    </button>
+  ))}
+  <script is:inline set:html={inline}></script>
+</div>
+
+<div class="tiles">
+  {tiles.map((t) => (
+    <dialog class="tile" id={`tile-${t.id}`} aria-labelledby={`tile-${t.id}-title`}>
+      <img src={t.img} alt={t.alt} style={t.position ? `object-position:${t.position}` : undefined} loading="lazy" />
+      <div class="tile-body">
+        <h2 id={`tile-${t.id}-title`}>{t.title}</h2>
+        {t.paras.map((p) => <p>{p}</p>)}
+      </div>
+      <form method="dialog"><button class="tile-close" aria-label="Close">Close</button></form>
+    </dialog>
+  ))}
+</div>
+
+<script is:inline>
+  (function () {
+    // Open a tile from its feature, growing out of where it was clicked; close on the
+    // button, Escape (built in) or a click outside the tile.
+    document.querySelectorAll('.pond-spot').forEach(function (spot) {
+      spot.addEventListener('click', function () {
+        var d = document.getElementById(spot.dataset.tile);
+        if (!d) return;
+        var r = spot.getBoundingClientRect();
+        var img = d.querySelector('img');
+        if (img) img.loading = 'eager';
+        d.showModal();
+        var b = d.getBoundingClientRect();
+        d.style.transformOrigin = (r.left + r.width / 2 - b.left) + 'px ' + (r.top + r.height / 2 - b.top) + 'px';
+      });
+    });
+    document.querySelectorAll('dialog.tile').forEach(function (d) {
+      d.addEventListener('click', function (e) {
+        if (e.target !== d) return;
+        var r = d.getBoundingClientRect();
+        var inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+        if (!inside) d.close();
+      });
+    });
+  })();
+</script>
+
+<style>
+  .pond { position: relative; width: 100%; aspect-ratio: 1.55; touch-action: manipulation; }
+  @media (max-width: 639px) { .pond { aspect-ratio: 0.8; } }
+  .pond canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .pond-paint { mix-blend-mode: multiply; }
+
+  .pond-spot {
+    position: absolute; left: 0; top: 0;
+    border: 0; padding: 0; background: none; cursor: pointer;
+    border-radius: 50%;
+    font: inherit;
+  }
+  .pond-spot:focus-visible { outline: 2px solid var(--color-ink); outline-offset: 2px; }
+  .pond-label {
+    position: absolute; left: 50%; top: 100%; translate: -50% 2px;
+    white-space: nowrap; font-size: 12.5px; color: var(--color-quiet);
+    text-shadow: 0 0 3px var(--color-paper), 0 0 3px var(--color-paper), 0 0 8px var(--color-paper);
+    transition: color 0.15s ease;
+  }
+  .pond-spot:hover .pond-label, .pond-spot:focus-visible .pond-label { color: var(--color-ink); }
+
+  .tile {
+    width: min(26rem, calc(100% - 2.5rem));
+    max-height: calc(100dvh - 2.5rem);
+    margin: auto; padding: 0; border: 0; overflow: auto;
+    border-radius: var(--radius-mat);
+    background: var(--color-paper);
+    color: var(--color-ink);
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--color-ink) 8%, transparent), 0 18px 50px -12px color-mix(in srgb, var(--color-ink) 28%, transparent);
+    /* grows out of the feature that was clicked (origin set when it opens) */
+    transition: opacity 0.35s ease, scale 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), overlay 0.35s allow-discrete, display 0.35s allow-discrete;
+    opacity: 0; scale: 0.6;
+  }
+  .tile[open] { opacity: 1; scale: 1; }
+  @starting-style { .tile[open] { opacity: 0; scale: 0.6; } }
+  .tile::backdrop { background: color-mix(in srgb, var(--color-paper) 55%, transparent); transition: background 0.35s ease, overlay 0.35s allow-discrete, display 0.35s allow-discrete; }
+  @starting-style { .tile[open]::backdrop { background: transparent; } }
+  .tile img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+  .tile-body { padding: 1.25rem 1.5rem 0.5rem; }
+  .tile h2 { font-size: 1.125rem; font-weight: 500; }
+  .tile p { margin-top: 0.75rem; line-height: 1.6; }
+  .tile form { padding: 0.5rem 1.5rem 1.25rem; }
+  .tile-close {
+    border: 0; background: none; padding: 0; font: inherit; font-size: 0.875rem;
+    color: var(--color-quiet); cursor: pointer;
+    text-decoration: underline; text-decoration-color: var(--color-rule); text-underline-offset: 4px;
+  }
+  .tile-close:hover { color: var(--color-ink); text-decoration-color: var(--color-ink); }
+  @media (prefers-reduced-motion: reduce) { .tile, .tile::backdrop { transition: none; } }
+
+  /* without JavaScript: no painting, the tiles as a plain list */
+  :global(html:not(.js)) .pond { display: none; }
+  :global(html:not(.js)) .tile { display: block; position: static; opacity: 1; scale: 1; box-shadow: none; width: 100%; max-width: 36rem; max-height: none; overflow: visible; margin: 2.5rem 0 0; }
+  :global(html:not(.js)) .tile form { display: none; }
+</style>

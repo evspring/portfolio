@@ -733,7 +733,7 @@ import { tree } from '../data/tree';
 
   function draw(now: number) {
     raf = 0;
-    let busy = cam.x.tick(now) | cam.y.tick(now) | potLift.tick(now) | sprout.tick(now) ? true : false;
+    let busy = cam.x.tick(now) | cam.y.tick(now) | potLift.tick(now) | sprout.tick(now) | birth.tick(now) ? true : false;
     for (const l of limbs) busy = l.grow.tick(now) || l.focus.tick(now) || l.hover.tick(now) || busy;
 
     const cx = Math.round(cam.x.v), cy = Math.round(cam.y.v);
@@ -826,6 +826,10 @@ import { tree } from '../data/tree';
   const potBottom = () => 92 * POT_SCALE;
   const potLift = new Tween(0);
   const sprout = new Tween(0); // 0 resting, 1 perked up on hover
+  // The first visit opens on an empty pot: a seed drops into the soil and the sapling grows
+  // out of it. 0 = empty pot, 1 = the sapling as it rests. Plays once per visit.
+  const birth = new Tween(1);
+  const BIRTH_SECONDS = 3.6, SEED_FALL = 0.2, SEED_REST = 0.3; // phases, as fractions of the whole
   let potWashes: { w: Wash; x: number; y: number }[] = [];
   // The sapling waiting in the pot: a tapered little trunk, two side shoots, and pointed leaves
   // gathering into a small crown, painted the same way as the tree it grows into.
@@ -907,13 +911,49 @@ import { tree } from '../data/tree';
     ];
   }
 
+  // The seed, falling and then settling into the soil
+  function paintSeed(b: number) {
+    if (b >= SEED_REST) return;
+    const fall = Math.min(1, b / SEED_FALL);
+    const y = lerp(-170, -1, easeIn(fall) * 0.6 + fall * 0.4); // gathers speed as it drops
+    const sink = b > SEED_FALL ? (b - SEED_FALL) / (SEED_REST - SEED_FALL) : 0; // pressed into the soil
+    ctx.save();
+    ctx.translate(1, y + sink * 3);
+    ctx.rotate(0.6 + fall * 2.4);
+    ctx.globalAlpha = 1 - sink;
+    ctx.fillStyle = C('pot-line');
+    ctx.beginPath(); ctx.ellipse(0, 0, 4.2, 2.6, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = (1 - sink) * 0.5;
+    ctx.fillStyle = C('pot-light');
+    ctx.beginPath(); ctx.ellipse(-1.2, -0.8, 1.6, 0.8, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    // a little puff of soil where it lands
+    if (b > SEED_FALL) {
+      const k = sink;
+      ctx.fillStyle = C('soil');
+      for (const [dx, h] of [[-9, 7], [-4, 10], [5, 9], [10, 6]]) {
+        ctx.globalAlpha = 0.6 * (1 - k);
+        ctx.beginPath(); ctx.arc(dx * (0.4 + k), -h * Math.sin(k * Math.PI), 1.3, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
   function paintSapling() {
+    const b = birth.v;
+    paintSeed(b);
+    if (b <= SEED_REST) return;
+    // growth: the stems are revealed from the soil upward; leaves unfurl as the growth passes them
+    const g = (b - SEED_REST) / (1 - SEED_REST);
+    const reach = 70 * easeOut(Math.min(1, g * 1.15)); // how far above the soil it has grown
     const perk = sprout.v; // hover: stands up a touch and opens its leaves
     ctx.save();
     ctx.translate(0, 3);
-    ctx.scale(1, lerp(1, 1.08, perk));
+    ctx.scale(1, lerp(1, 1.08, perk) * lerp(0.86, 1, Math.min(1, g * 1.2))); // straightens as it grows
     ctx.translate(0, -3);
     ctx.lineJoin = 'round';
+    ctx.save();
+    if (reach < 70) { ctx.beginPath(); ctx.rect(-40, 4 - reach, 80, reach + 8); ctx.clip(); }
     for (const stem of sapStems) {
       stem.forEach((path, i) => {
         ctx.globalAlpha = i === 2 ? 0.42 : 0.34;
@@ -921,15 +961,34 @@ import { tree } from '../data/tree';
         ctx.fill(path);
       });
     }
+    ctx.restore();
+    // a folded bud leads the growth, so the climbing tip reads as a shoot, not a cut-off stem
+    if (reach < 66) {
+      const t = reach / 67, bx = Math.sin(t * Math.PI) * 3.5 * 0.6 - t;
+      const s0 = Math.min(1, reach / 6);
+      for (const [rot, col] of [[-0.35, 0], [0.35, 1]] as const) {
+        ctx.save();
+        ctx.translate(bx, 3 - reach);
+        ctx.rotate(-Math.PI / 2 + rot);
+        ctx.globalAlpha = 0.85 * s0;
+        ctx.fillStyle = LEAVES[col];
+        ctx.beginPath(); ctx.ellipse(4 * s0, 0, 5 * s0, 2.2 * s0, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      }
+      ctx.globalAlpha = 1;
+    }
     for (const lf of sapLeaves) {
-      // leaves open outward from straight up on hover
+      // each leaf unfurls once the growth reaches it, with a little overshoot
+      const u = Math.max(0, Math.min(1, (reach + lf.y) / 14));
+      if (u <= 0) continue;
+      const pop = u < 1 ? 1 - Math.pow(1 - u, 3) * Math.cos(u * 4) : 1;
       const up = -Math.PI / 2;
       let d = lf.ang - up;
       d = Math.atan2(Math.sin(d), Math.cos(d));
       ctx.save();
       ctx.translate(lf.x, lf.y);
-      ctx.rotate(up + d * lerp(1, 1.12, perk));
-      drawWash(lf.w, 0, 0, lerp(1, 1.06, perk), 0.8 + 0.2 * lf.open);
+      ctx.rotate(up + d * lerp(1, 1.12, perk) * lerp(0.3, 1, u)); // folded upward, then opening out
+      drawWash(lf.w, 0, 0, lerp(1, 1.06, perk) * Math.max(0.05, pop), (0.8 + 0.2 * lf.open) * Math.min(1, u * 2));
       ctx.restore();
     }
     ctx.restore();
@@ -964,6 +1023,7 @@ import { tree } from '../data/tree';
     potBtn.addEventListener('focus', () => hover(true));
     potBtn.addEventListener('blur', () => hover(false));
     potBtn.addEventListener('click', () => {
+      if (birth.v < 1) { birth.set(1); showCount(); } // impatient: skip the intro
       potLift.go(-4, 0.1);
       setTimeout(() => potLift.go(0, 0.35), 100);
       if (!planted) growTree();
@@ -1030,6 +1090,19 @@ import { tree } from '../data/tree';
   const start = readHash();
   planted = start.grown;
   plant(start.path);
+  // first time here this visit (and motion is welcome): the seed drops in and the sapling grows
+  let seen = true;
+  try { seen = sessionStorage.getItem('seeded') === '1'; sessionStorage.setItem('seeded', '1'); } catch {}
+  if (!planted && !seen && !reduced) {
+    birth.set(0);
+    countEl.style.opacity = '0';
+    birth.go(1, BIRTH_SECONDS, (u) => u, 0.5);
+    setTimeout(showCount, (BIRTH_SECONDS + 0.4) * 1000);
+  }
+  function showCount() {
+    countEl.style.transition = 'opacity 0.6s ease';
+    countEl.style.opacity = '';
+  }
   wake();
 
   let resizeTimer = 0;

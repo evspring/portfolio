@@ -9,15 +9,17 @@ import { treeLinkFor } from '../data/tree';
 */
 const tiles: Tile[] = [
   {
-    id: 'me', feature: 'tree', label: 'Who am I', title: "Hi, I'm Evan",
-    photos: [{ src: '/about/portrait.jpg', alt: 'Evan beside the trail sign for the Misen climbing path in Japan', position: '50% 25%' }],
+    id: 'me', feature: 'tree', label: 'Who am I', title: "Hi, I'm Evan", icon: 'sprout', tall: true,
+    tags: [{ icon: 'pen', text: 'UX/UI design' }, { icon: 'bulb', text: 'Cognitive Science' }, { icon: 'compass', text: 'Problem solver' }],
+    photos: [{ src: '/about/portrait.jpg', alt: 'Evan beside the trail sign for the Misen climbing path in Japan', position: '50% 30%' }],
     paras: [
       "I'm a UX/UI designer with a background in Cognitive Science.",
       'When it comes to design, my philosophy has always been that of a problem solver. I find that every individual tells a story, and every interface is a unique journey. I find joy in understanding the simple things during that journey: what people enjoy, how they perceive their experiences, and what they think.',
     ],
   },
   {
-    id: 'outdoors', feature: 'kayak', label: 'Outdoors', title: 'Outdoors',
+    id: 'outdoors', feature: 'kayak', label: 'Outdoors', title: 'Outdoors', icon: 'kayak',
+    tags: [{ icon: 'mountain', text: 'Hiking' }, { icon: 'camera', text: 'Photography' }, { icon: 'book', text: 'Sci-fi books' }],
     photos: [{ src: '/about/hill.jpg', alt: 'A person walking up a bright green hill under a towering white cloud' }],
     paras: [
       'You can often catch me outdoors hiking and taking photos, or reading my favorite sci-fi books.',
@@ -25,7 +27,8 @@ const tiles: Tile[] = [
     ],
   },
   {
-    id: 'art', feature: 'flowers', label: 'Art & film', title: 'Art, film & storytelling',
+    id: 'art', feature: 'flowers', label: 'Art & film', title: 'Art, film & storytelling', icon: 'flower',
+    tags: [{ icon: 'brush', text: '3D animation' }, { icon: 'film', text: 'Film' }, { icon: 'play', text: 'YouTube, 75k+ community' }],
     photos: [
       { src: '/about/rocket.jpg', alt: 'A still from my own animation: a rocket silhouetted against a dark sky beside a glowing orange sun', position: '62% 50%' },
       { src: '/about/swimmers.jpg', alt: 'A still from a film I worked on: two crocodiles swimming through painted turquoise water', position: '62% 50%' },

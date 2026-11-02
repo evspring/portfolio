@@ -10,14 +10,37 @@
 import { transformWithOxc } from 'vite';
 import source from './about-pond.ts?raw';
 
+// Small line icons, drawn on a 24px grid in the leaf colours
+const ICONS = {
+  sprout: '<path d="M12 21v-8"/><path d="M12 13c-4 0-6.5-2.5-6.5-6.5 4 0 6.5 2.5 6.5 6.5z"/><path d="M12 11c0-3.8 2.4-6.2 6.2-6.2 0 3.8-2.4 6.2-6.2 6.2z"/>',
+  pen: '<path d="M4 20l1-4.5L16 4.5l3.5 3.5L8.5 19z"/><path d="M14 7l3.5 3.5"/>',
+  bulb: '<path d="M9.5 18h5M10.5 21h3"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3z"/>',
+  compass: '<circle cx="12" cy="12" r="8.5"/><path d="M14.8 9.2l-1.6 4-4 1.6 1.6-4z"/>',
+  mountain: '<path d="M2.5 20l6.5-11 4 6.5 2.5-3.5 6 8z"/><circle cx="17.5" cy="6" r="2"/>',
+  camera: '<path d="M4 8h3.2l1.8-2.8h6l1.8 2.8H20v11H4z"/><circle cx="12" cy="13.2" r="3.4"/>',
+  book: '<path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19"/>',
+  kayak: '<path d="M2.5 16.5C7 11.5 13.5 8 21.5 7.5 17 13 10.5 16.5 2.5 16.5z"/><ellipse cx="12.2" cy="12" rx="2" ry="1.2" transform="rotate(-27 12.2 12)"/><path d="M9.5 6.5l5.4 11"/><ellipse cx="8.9" cy="5.2" rx="0.9" ry="1.7" transform="rotate(-26 8.9 5.2)"/><ellipse cx="15.5" cy="18.8" rx="0.9" ry="1.7" transform="rotate(-26 15.5 18.8)"/>',
+  flower: '<circle cx="12" cy="8.5" r="1.5"/><circle cx="12" cy="4.6" r="2.3"/><circle cx="15.7" cy="7.3" r="2.3"/><circle cx="14.3" cy="11.6" r="2.3"/><circle cx="9.7" cy="11.6" r="2.3"/><circle cx="8.3" cy="7.3" r="2.3"/><path d="M12 14v7.5M12 19c-1.8-2-4.2-1.8-4.2-1.8.4 1.7 2 2.6 4.2 2.4"/>',
+  brush: '<path d="M19.5 3.5l1 1-8.5 8.5-2-2z"/><path d="M10 11c-2.8 0-4.5 1.7-4.5 4.5 0 1.6-1 2.6-2.5 3.5 4.5 1 9.5 0 9.5-5"/>',
+  film: '<rect x="3.5" y="5" width="17" height="14" rx="1.5"/><path d="M7.5 5v14M16.5 5v14M3.5 9.5h4M3.5 14.5h4M16.5 9.5h4M16.5 14.5h4"/>',
+  play: '<rect x="3" y="5.5" width="18" height="13" rx="3.5"/><path d="M10 9.3l5 2.7-5 2.7z"/>',
+} as const;
+export type IconName = keyof typeof ICONS;
+
 export interface Tile {
   id: string;
   feature: 'tree' | 'kayak' | 'flowers';
   label: string; // shown beside the feature
   title: string;
-  photos: { src: string; alt: string; position?: string }[]; // one, or two side by side; position = object-position for the crop
+  icon: IconName; // beside the title: the feature in the painting that opens it
+  tags: { icon: IconName; text: string }[]; // a row of little icon chips under the title
+  // one photo, or two side by side; `tall` puts a single photo in a column beside the text
+  photos: { src: string; alt: string; position?: string }[];
+  tall?: boolean;
   paras: string[];
 }
+const svg = (name: IconName, cls: string) =>
+  `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
 interface Props { tiles: Tile[] }
 const { tiles } = Astro.props;
 
@@ -38,15 +61,21 @@ const inline = `(function(){${code}})();`;
 
 <div class="tiles">
   {tiles.map((t) => (
-    <dialog class="tile" id={`tile-${t.id}`} aria-labelledby={`tile-${t.id}-title`}>
+    <dialog class:list={['tile', { tall: t.tall }]} id={`tile-${t.id}`} aria-labelledby={`tile-${t.id}-title`}>
       <div class:list={['tile-photos', { pair: t.photos.length > 1 }]}>
         {t.photos.map((ph) => <img src={ph.src} alt={ph.alt} style={ph.position ? `object-position:${ph.position}` : undefined} loading="lazy" />)}
       </div>
       <div class="tile-body">
-        <h2 id={`tile-${t.id}-title`}>{t.title}</h2>
+        <div class="tile-head">
+          <span class="tile-icon" set:html={svg(t.icon, '')} />
+          <h2 id={`tile-${t.id}-title`}>{t.title}</h2>
+        </div>
+        <ul class="tile-tags">
+          {t.tags.map((g) => <li><Fragment set:html={svg(g.icon, 'tag-icon')} />{g.text}</li>)}
+        </ul>
         {t.paras.map((p) => <p>{p}</p>)}
+        <form method="dialog"><button class="tile-close">Close</button></form>
       </div>
-      <form method="dialog"><button class="tile-close" aria-label="Close">Close</button></form>
     </dialog>
   ))}
 </div>
@@ -106,8 +135,8 @@ const inline = `(function(){${code}})();`;
   .pond-spot.label-above .pond-label { top: auto; bottom: 100%; translate: -50% -2px; }
 
   .tile {
-    width: min(26rem, calc(100% - 2.5rem));
-    max-height: calc(100dvh - 2.5rem);
+    width: min(44rem, calc(100% - 2rem));
+    max-height: calc(100dvh - 2rem);
     margin: auto; padding: 0; border: 0; overflow: auto;
     border-radius: var(--radius-mat);
     background: var(--color-paper);
@@ -121,14 +150,37 @@ const inline = `(function(){${code}})();`;
   @starting-style { .tile[open] { opacity: 0; scale: 0.6; } }
   .tile::backdrop { background: color-mix(in srgb, var(--color-paper) 55%, transparent); transition: background 0.35s ease, overlay 0.35s allow-discrete, display 0.35s allow-discrete; }
   @starting-style { .tile[open]::backdrop { background: transparent; } }
+
+  /* photos: full width on top; a pair side by side; a tall photo gets its own column on wide screens */
   .tile-photos { display: grid; gap: 3px; }
   .tile-photos.pair { grid-template-columns: 1fr 1fr; }
-  .tile img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
-  .tile-photos.pair img { aspect-ratio: 3 / 4; }
-  .tile-body { padding: 1.25rem 1.5rem 0.5rem; }
-  .tile h2 { font-size: 1.125rem; font-weight: 500; }
-  .tile p { margin-top: 0.75rem; line-height: 1.6; }
-  .tile form { padding: 0.5rem 1.5rem 1.25rem; }
+  .tile img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+  .tile-photos.pair img { aspect-ratio: 4 / 3; }
+  .tile.tall img { aspect-ratio: 4 / 3; }
+  @media (min-width: 640px) {
+    .tile.tall[open], :global(html:not(.js)) .tile.tall { display: grid; grid-template-columns: 2fr 3fr; }
+    .tile.tall .tile-photos { position: relative; }
+    .tile.tall img { position: absolute; inset: 0; height: 100%; aspect-ratio: auto; }
+  }
+
+  .tile-body { padding: 1.5rem 1.75rem 1.25rem; }
+  .tile-head { display: flex; align-items: center; gap: 0.75rem; }
+  .tile-icon {
+    flex: none; display: grid; place-items: center; width: 2.25rem; height: 2.25rem; border-radius: 50%;
+    background: color-mix(in srgb, var(--color-leaf-mint) 70%, var(--color-paper)); color: var(--color-leaf-deep);
+  }
+  .tile-icon :global(svg) { width: 1.25rem; height: 1.25rem; }
+  .tile h2 { font-size: 1.25rem; font-weight: 500; letter-spacing: -0.01em; }
+  .tile-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.9rem 0 0.25rem; padding: 0; list-style: none; }
+  .tile-tags li {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    padding: 0.2rem 0.65rem 0.2rem 0.5rem; border-radius: 999px;
+    font-size: 0.8125rem; color: var(--color-leaf-deep);
+    background: color-mix(in srgb, var(--color-leaf-mint) 45%, var(--color-paper));
+  }
+  .tile-tags :global(.tag-icon) { width: 0.95rem; height: 0.95rem; color: var(--color-leaf-teal); }
+  .tile p { margin-top: 0.85rem; line-height: 1.65; }
+  .tile form { margin-top: 1.1rem; }
   .tile-close {
     border: 0; background: none; padding: 0; font: inherit; font-size: 0.875rem;
     color: var(--color-quiet); cursor: pointer;
@@ -139,6 +191,6 @@ const inline = `(function(){${code}})();`;
 
   /* without JavaScript: no painting, the tiles as a plain list */
   :global(html:not(.js)) .pond { display: none; }
-  :global(html:not(.js)) .tile { display: block; position: static; opacity: 1; scale: 1; box-shadow: none; width: 100%; max-width: 36rem; max-height: none; overflow: visible; margin: 2.5rem 0 0; }
+  :global(html:not(.js)) .tile { display: block; position: static; opacity: 1; scale: 1; box-shadow: none; width: 100%; max-width: 44rem; max-height: none; overflow: hidden; margin: 2.5rem 0 0; }
   :global(html:not(.js)) .tile form { display: none; }
 </style>

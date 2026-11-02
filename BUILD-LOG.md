@@ -397,3 +397,11 @@ What changed:
 
 What changed:
 - Space above the painting is now 64px on phones and 88px on larger screens (halfway between the last two settings).
+
+**#46, Evan**
+> Lets redesign the cards, I want them to be a bit wider to better fit the photos and to be able to put more text in. Add some small icons based on the topic to each card as well to give them more personality
+
+What changed:
+- Cards widened from 26rem to 44rem. Two layouts: the portrait sits in its own column beside the text (2:3 split) so it isn't cropped short; landscape photos run full width on top at 16:9, a pair side by side at 4:3. Phones stack everything.
+- Hand-drawn line icons (24px grid, leaf colours): a round badge beside each title shows the painting feature that opened it (sprout, kayak, flower), and a row of icon chips under the title: UX/UI design, Cognitive Science, Problem solver / Hiking, Photography, Sci-fi books / 3D animation, Film, YouTube 75k+ community.
+- Close moved inside the text column. Redrew the kayak, flower and problem-solver icons after they read poorly at size. Every card fits on screen at 320–1440.

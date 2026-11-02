@@ -304,3 +304,21 @@ What changed:
 
 What changed:
 - Photo descriptions updated: the rocket is a still from Evan's own animation; the crocodiles are a still from a film he worked on.
+
+## 2 Nov 2026
+
+**#33, Evan**
+> Im trying to transfer my wix domain the cloudfare so we can use it for the site but its saying that I need to unlock the domain in order to transfer it
+
+What changed:
+- Nothing in the code. Explained that a transfer isn't needed for the site: switching the domain's nameservers to Cloudflare is enough, and Cloudflare requires that before a transfer anyway. Gave the unlock/transfer steps and the 60-day rule in case he wants to move registration later.
+
+**#34, Evan**
+> Add some tree artwork to the About page, it feels a little bland right now. Try connecting the images to one another with branches.
+
+What changed:
+- New `AboutBranches` component: watercolour branches behind the About photos in the tree's style (tapered stems from three overlaid outlines, twigs with square buds, pointed leaves, the three leaf tokens plus mint and rose, multiplied onto the paper). No new colours.
+- The photos are the canopies. Desktop: a trunk rises from a rose puddle below the photo row, behind the right photo, up through the empty space under the portrait (the crown); a bough sags under the row and rises into the other two photos. Each photo has clumps of foliage peeking out from behind its edges.
+- Phones and tablets, where the text runs into the trunk's path: the trunk is measured against where the text actually ends, and only drawn when it clears by 24px. Otherwise branches stay under the row and the portrait gets its own sprig.
+- Drawn while the page is parsed (TypeScript in `about-branches.ts`, compiled at build time and inlined after the canvas), so it's there in the first frame and pans in with the page. Redraws on resize and when fonts settle.
+- First pass's canopy washes read as flat grey-green frames and the bough looked like a pipe; replaced with uneven foliage clumps and wobbling, sagging branches. Foliage was cut off at the content edge; the canvas now paints up to 48px past it, never past the page edge. No sideways scroll at 320–1440.

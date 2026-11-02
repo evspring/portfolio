@@ -1,0 +1,26 @@
+---
+/*
+  Watercolour branches behind the About photos, in the home page tree's style: the photos are
+  the canopies. A trunk rises from below the photo row, behind the right-hand photo, up to the
+  portrait (the crown); a bough under the row reaches up into the other two. Each photo gets a
+  soft canopy wash behind its edges with a few leaves peeking out.
+
+  On phones the text runs full width between the portrait and the row, so the trunk would cross
+  the writing: there the branches stay with the row, and the portrait gets its own sprig.
+
+  Drop it at the END of a `relative isolate` element containing the .photo-slot images, so the
+  photos are laid out when it runs. The first .photo-slot is the portrait; the next three are
+  the row. The drawing code lives in about-branches.ts; it's compiled here and inlined.
+*/
+import { transformWithOxc } from 'vite';
+import source from './about-branches.ts?raw';
+const { code } = await transformWithOxc(source, 'about-branches.ts', { lang: 'ts' });
+const inline = `(function(){${code}})();`;
+---
+
+<canvas class="about-branches" aria-hidden="true"></canvas>
+<script is:inline set:html={inline}></script>
+
+<style>
+  .about-branches { position: absolute; left: 0; top: 0; pointer-events: none; z-index: -1; }
+</style>

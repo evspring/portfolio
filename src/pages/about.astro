@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import PhotoSlot from '../components/PhotoSlot.astro';
+import AboutBranches from '../components/AboutBranches.astro';
 import { treeLinkFor } from '../data/tree';
 
 /*
@@ -16,7 +17,7 @@ const photos = [
 ---
 
 <Base title="About — Evan Springer" back={treeLinkFor('/about/')} plain>
-  <article class="pt-24 sm:pt-32">
+  <article class="relative isolate pt-24 sm:pt-32">
     <div class="grid gap-10 sm:grid-cols-[minmax(0,1fr)_15rem] sm:items-start sm:gap-14">
       <div>
         <h1 class="text-2xl font-medium tracking-[-0.02em]">About</h1>
@@ -57,5 +58,6 @@ const photos = [
     <p class="mt-20 text-lg">
       <a href="/contact/" class="underline decoration-rule underline-offset-4 hover:decoration-ink">Get in touch</a>
     </p>
+    <AboutBranches />
   </article>
 </Base>

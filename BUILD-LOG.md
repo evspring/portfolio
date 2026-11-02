@@ -445,3 +445,9 @@ What changed:
 What changed:
 - First landing on the home page (once per visit, via sessionStorage) opens on an empty pot. After half a second a seed (pot-line brown with a light glint) drops in, gathering speed and tumbling, presses into the soil with a small puff of soil, and the sapling grows out of it: the stems rise from the soil, a folded leaf bud leads the tip, the side shoots appear as it passes, and each leaf unfurls with a little overshoot as the growth reaches it, the crown last. 3.6s in all; "Click the pot" fades in after.
 - Clicking the pot during the intro skips straight to the grown tree. No intro with reduced motion, on later loads in the same visit, or when coming back from a page (`/#/…`).
+
+**#53, Evan**
+> Lets change work/ to Work
+
+What changed:
+- `work/` now shows as "Work/" on the tree and "Work" in the path, matching RealTruck/ and ArtCenter/. Address stays `/#/work`. Overlap check: 0 problems.

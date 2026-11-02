@@ -18,6 +18,7 @@ export const tree: TreeNode = {
   children: [
     {
       name: 'work',
+      label: 'Work',
       kind: 'folder',
       children: [
         {

@@ -391,3 +391,9 @@ What changed:
 What changed:
 - Couldn't reproduce in Chromium at any size or pixel density (nothing painted on the canvas's top rows), so likely an older deploy or Safari. Made it fail-safe: both canvases fade to transparent near every edge with a CSS mask, so no browser can show the painting ending in a hard line.
 - More space above the painting: 80px on phones, 112px on larger screens.
+
+**#45, Evan**
+> Looks good now, lets move it up by half of what you just moved it down
+
+What changed:
+- Space above the painting is now 64px on phones and 88px on larger screens (halfway between the last two settings).

@@ -432,3 +432,9 @@ What changed:
 - New photo `public/about/hike-selfie.jpg` (1400px, from Evan's original).
 - Outdoors card now shows the hike selfie and the Misen trail portrait side by side, square crops framed on Evan. Hill photo removed from the card and the repo.
 - Who am I is now a text-only card (cards can have no photo).
+
+**#51, Evan**
+> You can use this photo for the "Who Am I" card
+
+What changed:
+- New headshot `public/about/headshot.jpg` (1000px wide). Who am I card is back to the photo-beside-text layout with it; stacked on top on phones, framed on Evan's face. Fits on screen at 1440 and 390.

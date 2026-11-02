@@ -81,6 +81,12 @@ const inline = `(function(){${code}})();`;
   .pond { position: relative; width: 100%; aspect-ratio: 1.55; touch-action: manipulation; }
   @media (max-width: 639px) { .pond { aspect-ratio: 0.8; } }
   .pond canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  /* the painting fades out before its edges, so no browser can ever show it ending in a hard line */
+  .pond-paint, .pond-live {
+    --edge: linear-gradient(to bottom, transparent, #000 7%, #000 93%, transparent), linear-gradient(to right, transparent, #000 4%, #000 96%, transparent);
+    -webkit-mask-image: var(--edge); mask-image: var(--edge);
+    -webkit-mask-composite: source-in; mask-composite: intersect;
+  }
   .pond-paint { mix-blend-mode: multiply; }
 
   .pond-spot {

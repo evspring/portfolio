@@ -384,3 +384,10 @@ What changed:
 What changed:
 - More space above the pond (48px on phones, 64px on larger screens, up from 24/8).
 - The meadow reached the canvas edge, so its top was sliced flat. Meadow made a little shorter and less ragged, and the phone trees moved down a touch. Checked by reading the canvas's edge pixels: nothing painted on any edge at 390, 820 or 1440.
+
+**#44, Evan**
+> I'm still seeing that the top of the meadow/painting is cut off. I also want there to be more space between the top text "About" and the painting
+
+What changed:
+- Couldn't reproduce in Chromium at any size or pixel density (nothing painted on the canvas's top rows), so likely an older deploy or Safari. Made it fail-safe: both canvases fade to transparent near every edge with a CSS mask, so no browser can show the painting ending in a hard line.
+- More space above the painting: 80px on phones, 112px on larger screens.

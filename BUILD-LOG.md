@@ -337,3 +337,16 @@ What changed:
 - Features open tiles (native `<dialog>`: photo, then text; grows from the feature; Escape, Close or a click outside closes): tree → "Hi, I'm Evan" (portrait), kayak → Outdoors (hill), flowers → Art & animation (rocket), lily pads → Film & storytelling (crocodiles). Uses Evan's existing About text; one placeholder line in Outdoors. Labels sit beside each feature.
 - Without JavaScript the painting hides and the tiles show as a list.
 - Caught on screenshot: first pass far too dark and hard-edged, things cut off at the painting's edge, tree unreadable; pond outline polygonal; glints like teeth; ink clumps like spiders; tiles stuck top-left (Tailwind's reset removes dialog centring); kayak barely responded to clicks; tile text clipped without JavaScript. All fixed. No sideways scroll at 320–1920.
+
+**#36, Evan**
+> I like the color but the pond kind of sucks. Make it look more like a pond, add some rocks, lily pads and fish. Get rid of the squiggle lines they don't look good with the water color of the rest of the site.
+
+What changed:
+- All ink squiggles removed; the kayak's outline and paddle now use the pot's dark brown instead of ink.
+- Repainted as a pond in a meadow: a kidney-shaped pond with an uneven shore set in a soft grassy meadow with dabs of grass (kept off the water), a soft damp bank, pale shallows deepening to a darker middle, soft sky reflections and pigment grain.
+- Rocks: runs of pale, rounded stones along the banks (lit from the top left, shaded below, a little moss at the waterline) and a few out in the water.
+- Lily pads: a large cluster (the Film tile) and smaller groups around the pond, notched, with shadows and some with flowers. They're on a separate surface layer so the fish swim underneath them.
+- Koi: five, in terracotta, peach and paper colours with spots, under the surface (faded, with shadows). Bodies bend with the tail beat, fins paddle, they wander and pause, and they dart away when the water is clicked.
+- Reeds with cattails at the shore, more trees and bushes from above around the meadow, the flower patch on the bank.
+- Tuned on screenshots: water first too dark (lightened), rocks read black (now painted pale over the water), reeds read as dark spikes (lightened), bank a hard dark band (now only the shore ring, blurred), then water too close to the grass (deepened a touch).
+- Checks: all four tiles open and close at 1440 and 390; no sideways scroll at 320–1440; ~19ms per frame with the pond running vs ~16ms on a still page.

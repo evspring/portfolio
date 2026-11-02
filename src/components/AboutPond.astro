@@ -12,12 +12,10 @@ import source from './about-pond.ts?raw';
 
 export interface Tile {
   id: string;
-  feature: 'tree' | 'kayak' | 'flowers' | 'lilies';
+  feature: 'tree' | 'kayak' | 'flowers';
   label: string; // shown beside the feature
   title: string;
-  img: string;
-  alt: string;
-  position?: string; // object-position for the photo crop
+  photos: { src: string; alt: string; position?: string }[]; // one, or two side by side; position = object-position for the crop
   paras: string[];
 }
 interface Props { tiles: Tile[] }
@@ -41,7 +39,9 @@ const inline = `(function(){${code}})();`;
 <div class="tiles">
   {tiles.map((t) => (
     <dialog class="tile" id={`tile-${t.id}`} aria-labelledby={`tile-${t.id}-title`}>
-      <img src={t.img} alt={t.alt} style={t.position ? `object-position:${t.position}` : undefined} loading="lazy" />
+      <div class:list={['tile-photos', { pair: t.photos.length > 1 }]}>
+        {t.photos.map((ph) => <img src={ph.src} alt={ph.alt} style={ph.position ? `object-position:${ph.position}` : undefined} loading="lazy" />)}
+      </div>
       <div class="tile-body">
         <h2 id={`tile-${t.id}-title`}>{t.title}</h2>
         {t.paras.map((p) => <p>{p}</p>)}
@@ -60,8 +60,7 @@ const inline = `(function(){${code}})();`;
         var d = document.getElementById(spot.dataset.tile);
         if (!d) return;
         var r = spot.getBoundingClientRect();
-        var img = d.querySelector('img');
-        if (img) img.loading = 'eager';
+        d.querySelectorAll('img').forEach(function (img) { img.loading = 'eager'; });
         d.showModal();
         var b = d.getBoundingClientRect();
         d.style.transformOrigin = (r.left + r.width / 2 - b.left) + 'px ' + (r.top + r.height / 2 - b.top) + 'px';
@@ -98,6 +97,7 @@ const inline = `(function(){${code}})();`;
     transition: color 0.15s ease;
   }
   .pond-spot:hover .pond-label, .pond-spot:focus-visible .pond-label { color: var(--color-ink); }
+  .pond-spot.label-above .pond-label { top: auto; bottom: 100%; translate: -50% -2px; }
 
   .tile {
     width: min(26rem, calc(100% - 2.5rem));
@@ -115,7 +115,10 @@ const inline = `(function(){${code}})();`;
   @starting-style { .tile[open] { opacity: 0; scale: 0.6; } }
   .tile::backdrop { background: color-mix(in srgb, var(--color-paper) 55%, transparent); transition: background 0.35s ease, overlay 0.35s allow-discrete, display 0.35s allow-discrete; }
   @starting-style { .tile[open]::backdrop { background: transparent; } }
+  .tile-photos { display: grid; gap: 3px; }
+  .tile-photos.pair { grid-template-columns: 1fr 1fr; }
   .tile img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+  .tile-photos.pair img { aspect-ratio: 3 / 4; }
   .tile-body { padding: 1.25rem 1.5rem 0.5rem; }
   .tile h2 { font-size: 1.125rem; font-weight: 500; }
   .tile p { margin-top: 0.75rem; line-height: 1.6; }

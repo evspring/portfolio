@@ -362,3 +362,12 @@ What changed:
 - The Cloudflare project was created as a Worker (the dashboard's current default), not Pages, and its builds were failing: a Worker deploy needs a config telling it where the built site is. Added `wrangler.jsonc` (name "portfolio", static assets from `dist/`, no server code). Checked with `wrangler deploy --dry-run`: reads all 24 files.
 - `npm run deploy` now uses `wrangler deploy`. CLAUDE.md rule, README and astro.config comment updated: static files only, no server code.
 - Told Evan to delete the A/AAAA/CNAME records Cloudflare copied from Wix for the root and www (keeping MX/TXT for email), then add the domain again.
+
+**#40–41, Evan**
+> Lets combine films and stores with art and animations, have it labeled under the flowers
+> Lets also change "About Me" to "Who Am I"
+
+What changed:
+- Film & storytelling merged into the flowers tile: "Art & film", titled "Art, film & storytelling", with the rocket and crocodile stills side by side and both paragraphs. Tiles can now hold one photo or a pair. The lily pads stay as decoration.
+- Tree label is now "Who am I".
+- Fixed: on phones the flowers sit at the bottom edge, so their label fell off the painting; labels now go above a feature when there's no room below. All three tiles open and close at 320–1440, all labels inside the painting.

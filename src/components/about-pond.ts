@@ -567,9 +567,10 @@ function placeSpot(name: string, x: number, y: number, size: number) {
   if (!el) return;
   el.style.width = el.style.height = `${Math.round(size)}px`;
   el.style.transform = `translate(${Math.round(x - size / 2)}px, ${Math.round(y - size / 2)}px)`;
+  el.classList.toggle('label-above', y + size / 2 + 22 > H); // no room below: label goes on top
 }
 function placeSpots() {
-  for (const k of ['tree', 'flowers', 'lilies']) placeSpot(k, feat[k].x, feat[k].y, feat[k].r * 2);
+  for (const k of ['tree', 'flowers']) placeSpot(k, feat[k].x, feat[k].y, feat[k].r * 2);
   placeSpot('kayak', kayak.x, kayak.y, kayak.len);
 }
 

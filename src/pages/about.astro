@@ -9,8 +9,8 @@ import { treeLinkFor } from '../data/tree';
 */
 const tiles: Tile[] = [
   {
-    id: 'me', feature: 'tree', label: 'About me', title: "Hi, I'm Evan",
-    img: '/about/portrait.jpg', alt: 'Evan beside the trail sign for the Misen climbing path in Japan', position: '50% 25%',
+    id: 'me', feature: 'tree', label: 'Who am I', title: "Hi, I'm Evan",
+    photos: [{ src: '/about/portrait.jpg', alt: 'Evan beside the trail sign for the Misen climbing path in Japan', position: '50% 25%' }],
     paras: [
       "I'm a UX/UI designer with a background in Cognitive Science.",
       'When it comes to design, my philosophy has always been that of a problem solver. I find that every individual tells a story, and every interface is a unique journey. I find joy in understanding the simple things during that journey: what people enjoy, how they perceive their experiences, and what they think.',
@@ -18,23 +18,20 @@ const tiles: Tile[] = [
   },
   {
     id: 'outdoors', feature: 'kayak', label: 'Outdoors', title: 'Outdoors',
-    img: '/about/hill.jpg', alt: 'A person walking up a bright green hill under a towering white cloud',
+    photos: [{ src: '/about/hill.jpg', alt: 'A person walking up a bright green hill under a towering white cloud' }],
     paras: [
       'You can often catch me outdoors hiking and taking photos, or reading my favorite sci-fi books.',
       'Placeholder: a few lines about a favorite trail, a trip, or time out on the water.',
     ],
   },
   {
-    id: 'art', feature: 'flowers', label: 'Art & animation', title: 'Art & animation',
-    img: '/about/rocket.jpg', alt: 'A still from my own animation: a rocket silhouetted against a dark sky beside a glowing orange sun',
+    id: 'art', feature: 'flowers', label: 'Art & film', title: 'Art, film & storytelling',
+    photos: [
+      { src: '/about/rocket.jpg', alt: 'A still from my own animation: a rocket silhouetted against a dark sky beside a glowing orange sun', position: '62% 50%' },
+      { src: '/about/swimmers.jpg', alt: 'A still from a film I worked on: two crocodiles swimming through painted turquoise water', position: '62% 50%' },
+    ],
     paras: [
       "For most of my life I've defined myself as a dedicated storyteller and artist. From practicing 3D animation as a high school student to building a community through film in college, I'm always creating and looking for something new.",
-    ],
-  },
-  {
-    id: 'film', feature: 'lilies', label: 'Film & stories', title: 'Film & storytelling',
-    img: '/about/swimmers.jpg', alt: 'A still from a film I worked on: two crocodiles swimming through painted turquoise water',
-    paras: [
       "I'm an avid content creator. I've always had a passion for telling stories and use YouTube to create, produce, and share my stories online. Over the past two years I've built an online community of over 75,000 people through storytelling and content creation, and it's greatly impacted how I approach design today.",
     ],
   },

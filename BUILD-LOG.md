@@ -478,3 +478,12 @@ What changed:
 
 What changed:
 - about and contact now show lowercase on the tree, like evan, work/, realtruck/, artcenter/. Project names unchanged. Overlap check: 0 problems.
+
+**#58–59, Evan**
+> I'm trying to find ways to make the "About" section titles for each card more obvious so its clear they can be clicked on. Any ideas?
+> Yes build that
+
+What changed:
+- Pond labels are now chips like the card tags: pale mint pill with a soft shadow and the card's icon (sprout, kayak, flower). On hover or keyboard focus the chip lifts and turns deep green with paper text.
+- A slow double ripple spreads under the tree, kayak and flowers every 3.3s, out of step with each other. A feature's ripple stops once its card has been opened (remembered for the visit). Hovering holds a steady ring around the feature. Reduced motion: one still ring, no animation.
+- Checked at 1440 and 390: labels inside the painting, ripple stops after opening the tree card.

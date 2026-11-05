@@ -635,10 +635,57 @@ function frame(ms: number) {
   render(now);
   if (running && visible) raf = requestAnimationFrame(frame);
 }
+/* ---------- hints: a slow ripple under each feature until its card has been opened ---------- */
+const HINT = { tree: 0, kayak: 1.1, flowers: 2.2 } as Record<string, number>; // out of step with each other
+let opened = new Set<string>();
+try { opened = new Set(JSON.parse(sessionStorage.getItem('pond-opened') || '[]')); } catch {}
+let hovered: string | null = null;
+function hintAt(name: string): Feature {
+  return name === 'kayak' ? { x: kayak.x, y: kayak.y, r: kayak.len * 0.45 } : { x: feat[name].x, y: feat[name].y, r: feat[name].r * 0.75 };
+}
+function drawHints(now: number) {
+  const c = lc;
+  for (const name of Object.keys(HINT)) {
+    const f = hintAt(name);
+    if (hovered === name) {
+      // hovering: a steady ring holds around it
+      c.beginPath(); c.ellipse(f.x, f.y, f.r * 1.25, f.r * 1.15, 0, 0, Math.PI * 2);
+      c.globalAlpha = 0.75; c.strokeStyle = PAPER; c.lineWidth = 3; c.stroke();
+      c.globalAlpha = 0.35; c.strokeStyle = TEAL; c.lineWidth = 1.2; c.stroke();
+      continue;
+    }
+    if (opened.has(name)) continue;
+    // two rings spreading and fading, every 3.3 seconds
+    const period = 3.3;
+    for (const lag of [0, 0.45]) {
+      const a = still ? 0.45 : (((now - HINT[name] - lag) % period) + period) % period / period;
+      if (a > 0.85) continue;
+      const k = a / 0.85, fade = Math.sin(k * Math.PI) * (lag ? 0.6 : 1);
+      const rr = f.r * (0.8 + k * 0.75);
+      c.beginPath(); c.ellipse(f.x, f.y, rr, rr * 0.92, 0, 0, Math.PI * 2);
+      c.globalAlpha = 0.5 * fade; c.strokeStyle = PAPER; c.lineWidth = 1.8; c.stroke();
+      c.beginPath(); c.ellipse(f.x + 0.8, f.y + 1.2, rr, rr * 0.92, 0, 0, Math.PI * 2);
+      c.globalAlpha = 0.22 * fade; c.strokeStyle = TEAL; c.lineWidth = 1; c.stroke();
+    }
+  }
+  c.globalAlpha = 1;
+}
+spots.forEach((el, name) => {
+  el.addEventListener('pointerenter', () => { hovered = name; if (still) render(0); });
+  el.addEventListener('pointerleave', () => { hovered = null; if (still) render(0); });
+  el.addEventListener('focus', () => { hovered = name; if (still) render(0); });
+  el.addEventListener('blur', () => { hovered = null; if (still) render(0); });
+  el.addEventListener('click', () => {
+    opened.add(name);
+    try { sessionStorage.setItem('pond-opened', JSON.stringify([...opened])); } catch {}
+  });
+});
+
 function render(now: number) {
   lc.clearRect(0, 0, W, H);
   for (const f of fish) drawFish(f);
   lc.drawImage(surf, 0, 0, W, H);
+  drawHints(now);
   drawRings(now);
   drawKayak(now);
   placeSpots();

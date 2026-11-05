@@ -504,3 +504,9 @@ What changed:
 - New `ContactScene` (painted in `contact-scene.ts`, compiled and inlined so it's there in the first frame): a soft watercolour hill in mint, sage and teal with grass blades and a few wildflowers, a windswept tree (leaning trunk painted like the home tree's stems, wide flat canopy layers shaded underneath and lit on top) with its shadow, and a still person on the hill (terracotta shirt, curly dark hair). Only the site's tokens.
 - Wording unchanged. On wide screens the scene rises up beside the text, so the tree sits next to the email like the reference; on phones it sits below. It fades into the paper above the footer, runs full width, never covers the email link, and doesn't scroll sideways at 390–1920.
 - Tuned on screenshots: canopies first read as flat dark discs (now clumps), grass too spiky, tree too small on desktop.
+
+**#62, Evan**
+> Do the tree in a similar style to the main page with more block style canopies
+
+What changed:
+- Contact tree's leafy layers replaced with the home page tree's canopy blocks: rounded squares of wash graded light to deep (mint/sage into teal/deep), pigment pooling low, a darker drying edge and a little bleed, one block at the end of each limb. Same trunk and person. Checked at 1440 and 390.

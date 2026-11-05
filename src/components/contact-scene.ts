@@ -103,6 +103,37 @@ function curve(p0: P, p1: P, p2: P, p3: P, n = 30): P[] {
   });
 }
 
+/* a canopy block, as on the home page tree */
+function squarePts(r: number, n = 28): P[] {
+  return Array.from({ length: n }, (_, i) => {
+    const a = (i / n) * Math.PI * 2, c = Math.cos(a), sn = Math.sin(a);
+    return { x: r * Math.sign(c) * Math.pow(Math.abs(c), 2 / 5.5), y: r * Math.sign(sn) * Math.pow(Math.abs(sn), 2 / 5.5) };
+  });
+}
+function canopy(c: P, size: number, light: string, deep: string) {
+  const h = size / 2, sq = squarePts(h);
+  const at = (pts: P[]) => pts.map((q) => ({ x: q.x + c.x, y: q.y + c.y }));
+  ctx.save();
+  ctx.globalCompositeOperation = 'multiply';
+  ctx.fillStyle = light; ctx.globalAlpha = 0.09;
+  ctx.fill(pathOf(at(deform(deform(sq.map((q) => ({ x: q.x * 1.07, y: q.y * 1.07 })), 0.1), 0.08)))); // bleed
+  const g = ctx.createLinearGradient(0, c.y - h, 0, c.y + h);
+  g.addColorStop(0, light); g.addColorStop(1, deep);
+  ctx.fillStyle = g; ctx.globalAlpha = 0.2;
+  for (let i = 0; i < 6; i++) {
+    const sh = { x: gauss() * 2.2 * size / 100, y: gauss() * 2.2 * size / 100 }, f = 1 - i * 0.045;
+    ctx.fill(pathOf(at(deform(deform(sq.map((q) => ({ x: q.x * f + sh.x, y: q.y * f + sh.y })), 0.06), 0.05))));
+  }
+  ctx.fillStyle = deep; ctx.globalAlpha = 0.13;
+  for (let i = 0; i < 7; i++) { // pigment pooling, mostly low
+    const r = size * (0.07 + rnd() * 0.16), cx0 = (rnd() - 0.5) * size * 0.6, cy0 = (rnd() - 0.1) * size * 0.55;
+    ctx.fill(pathOf(at(deform(deform(blobPts(cx0, cy0, r, r * 0.8, 0.1, 12), 0.22), 0.15))));
+  }
+  ctx.strokeStyle = deep; ctx.lineWidth = 1.6; ctx.globalAlpha = 0.2;
+  ctx.stroke(pathOf(at(deform(deform(sq, 0.05), 0.04)))); // where the wash dries
+  ctx.restore();
+}
+
 /* ---------- the scene ---------- */
 // the hill's top edge: low on the left with a soft dip, rising gently to the right under the tree
 let groundY = (x: number) => 0;
@@ -175,26 +206,13 @@ function paint() {
     [at(2, 40), at(10, 46), at(18, 54), at(26, 58), 2.6 * s, 1.1 * s],
   ];
   for (const [a, b, c, d, w0, w1] of limbs) limb(curve(a, b, c, d, 20), w0, w1);
-  // canopies: flat, wide layers of leafy clumps, shaded underneath and lit on top
-  const pads: [number, number, number, number][] = [
-    [-28, 68, 17, 6], [-6, 86, 17, 7], [16, 77, 18, 6.5], [-32, 48, 14, 5], [29, 47, 16, 5.5],
-    [28, 61, 13, 5], [-14, 62, 13, 5], [6, 64, 10, 4.5], [-20, 78, 10, 4.5],
+  // canopies: the home page tree's blocks, rounded squares of wash graded light to deep,
+  // with pigment pooling low, a darker drying edge and a little bleed into the paper
+  const blocks: [number, number, number, string, string][] = [
+    [-29, 66, 19, MINT, TEAL], [-4, 84, 21, SAGE, DEEP], [19, 74, 19, MINT, DEEP],
+    [-33, 45, 16, SAGE, TEAL], [30, 46, 17, MINT, TEAL], [-12, 62, 14, SAGE, DEEP], [29, 60, 14, SAGE, TEAL],
   ];
-  for (const [x, y, rx, ry] of pads) {
-    const c = at(x, y);
-    soft(2, () => blob(c.x + 1.5 * s, c.y + ry * 0.55 * s, rx * 0.95 * s, ry * 0.7 * s, TEAL, 0.16, 3), M * 0.006); // shade underneath
-    for (let i = 0; i < 12; i++) {
-      const a = (i / 12) * Math.PI * 2 + gauss() * 0.3, d = 0.35 + rnd() * 0.5;
-      const bx = c.x + Math.cos(a) * rx * d * s, by = c.y + Math.sin(a) * ry * d * 0.8 * s;
-      blob(bx, by, rx * (0.22 + rnd() * 0.16) * s, ry * (0.42 + rnd() * 0.25) * s, rnd() < 0.7 ? SAGE : TEAL, 0.14, 3);
-    }
-    blob(c.x, c.y, rx * 0.7 * s, ry * 0.65 * s, SAGE, 0.12, 4);
-    ctx.globalCompositeOperation = 'source-over';
-    for (let i = 0; i < 4; i++) { // light catching the tops of the clumps
-      blob(c.x + gauss() * rx * 0.4 * s, c.y - ry * (0.35 + rnd() * 0.2) * s, rx * (0.16 + rnd() * 0.1) * s, ry * 0.22 * s, MINT, 0.4, 2);
-    }
-    ctx.globalCompositeOperation = 'multiply';
-  }
+  for (const [x, y, size, light, deep] of blocks) canopy(at(x, y), size * s, light, deep);
 
   /* the person, standing on the hill, facing us */
   const px = W * (narrow ? 0.34 : 0.4), py = groundY(px) + 2;

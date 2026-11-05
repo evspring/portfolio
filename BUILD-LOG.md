@@ -463,3 +463,12 @@ What changed:
 
 What changed:
 - Folder display labels removed: the tree and path show evan, work/, realtruck/, artcenter/ again. Page names (Sequence, About…) unchanged. Folders can still take a label if wanted later. Overlap check: 0 problems.
+
+## 5 Nov 2026
+
+**#56, Evan**
+> Can we make the "click the pot" text a little bigger and closer to the pot itself. I'd also like computer users to be able to press enter to start the sequence as well.
+
+What changed:
+- The prompt moved from the bottom of the screen to just under the pot (about 20px below its shadow) and went from 12px to 15px. On computers it reads "Click the pot or press Enter" (Enter shown as a small key); on touch screens "Tap the pot". It fades in after the seed intro and fades out as the tree grows; the bottom line only shows item counts after that.
+- Pressing Enter anywhere on the home page grows the tree (and skips the intro if it's still playing). Checked at 1440, 1280 and 390.

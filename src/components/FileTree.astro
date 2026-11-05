@@ -68,6 +68,18 @@ import { tree } from '../data/tree';
   html:not(.js) .tree-list ul ul { padding-left: 1.25rem; }
 
   .pot-btn { position: absolute; padding: 0; background: none; border: 0; border-radius: 24px; cursor: pointer; }
+  /* the prompt under the pot before the tree grows */
+  .pot-hint {
+    position: absolute; left: 0; translate: -50% 0; white-space: nowrap; pointer-events: none;
+    font-size: 15px; color: var(--color-quiet); text-align: center;
+    text-shadow: 0 0 3px var(--color-paper), 0 0 3px var(--color-paper), 0 0 8px var(--color-paper);
+    transition: opacity 0.6s ease;
+  }
+  .pot-hint kbd {
+    font: inherit; font-size: 13px; padding: 1px 6px; margin: 0 1px;
+    border: 1px solid var(--color-rule); border-radius: 5px; color: var(--color-ink);
+  }
+  .pot-hint.hidden { opacity: 0; }
 
   /* A node sits exactly on a limb's tip. Its hit area covers the painted bud or canopy;
      its label sits wherever it's clear of the tree. */
@@ -721,7 +733,7 @@ import { tree } from '../data/tree';
       } else seg.setAttribute('aria-current', 'location');
       pathEl.appendChild(seg);
     });
-    if (!planted) { countEl.textContent = coarse ? 'Tap the pot' : 'Click the pot'; return; }
+    if (!planted) { countEl.textContent = ''; return; } // the prompt sits under the pot instead
     const n = open[open.length - 1].node.children?.length ?? 0;
     countEl.textContent = `${n} item${n === 1 ? '' : 's'}`;
     history.replaceState(null, '', `#/${open.slice(1).map((f) => f.node.name).join('/')}`);
@@ -1030,14 +1042,22 @@ import { tree } from '../data/tree';
       else if (open.length > 1) { closeBelow(0); refocus(); } // the pot also takes you back to the top
     });
     world.appendChild(potBtn);
+    potHint = document.createElement('p');
+    potHint.className = 'pot-hint';
+    potHint.innerHTML = coarse ? 'Tap the pot' : 'Click the pot or press <kbd>Enter</kbd>';
+    potHint.style.top = `${Math.round(potBottom() + 26 * POT_SCALE)}px`;
+    if (planted || hintWaiting) potHint.classList.add('hidden');
+    world.appendChild(potHint);
     labelPot();
   }
+  let potHint: HTMLElement, hintWaiting = false;
   function labelPot() {
     potBtn.setAttribute('aria-label', planted ? 'Back to the top of the tree' : 'Grow the tree');
   }
 
   function growTree() {
     planted = true;
+    potHint?.classList.add('hidden');
     labelPot();
     const trunk = open[0];
     const t = growTime(trunk);
@@ -1095,13 +1115,14 @@ import { tree } from '../data/tree';
   try { seen = sessionStorage.getItem('seeded') === '1'; sessionStorage.setItem('seeded', '1'); } catch {}
   if (!planted && !seen && !reduced) {
     birth.set(0);
-    countEl.style.opacity = '0';
+    hintWaiting = true;
+    potHint.classList.add('hidden');
     birth.go(1, BIRTH_SECONDS, (u) => u, 0.5);
     setTimeout(showCount, (BIRTH_SECONDS + 0.4) * 1000);
   }
   function showCount() {
-    countEl.style.transition = 'opacity 0.6s ease';
-    countEl.style.opacity = '';
+    hintWaiting = false;
+    if (!planted) potHint.classList.remove('hidden');
   }
   wake();
 
@@ -1123,5 +1144,8 @@ import { tree } from '../data/tree';
 
   addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && open.length > 1) { closeBelow(open.length - 2); refocus(); }
+    // Enter grows the tree from anywhere on the page (a focused pot handles Enter itself)
+    const a = document.activeElement;
+    if (e.key === 'Enter' && !planted && (!a || a === document.body)) { e.preventDefault(); potBtn.click(); }
   });
 </script>

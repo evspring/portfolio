@@ -39,8 +39,8 @@ export const tree: TreeNode = {
         },
       ],
     },
-    { name: 'about', label: 'About', kind: 'file', href: '/about/' },
-    { name: 'contact', label: 'Contact', kind: 'file', href: '/contact/' },
+    { name: 'about', kind: 'file', href: '/about/' },
+    { name: 'contact', kind: 'file', href: '/contact/' },
   ],
 };
 

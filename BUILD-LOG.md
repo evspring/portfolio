@@ -472,3 +472,9 @@ What changed:
 What changed:
 - The prompt moved from the bottom of the screen to just under the pot (about 20px below its shadow) and went from 12px to 15px. On computers it reads "Click the pot or press Enter" (Enter shown as a small key); on touch screens "Tap the pot". It fades in after the seed intro and fades out as the tree grows; the bottom line only shows item counts after that.
 - Pressing Enter anywhere on the home page grows the tree (and skips the intro if it's still playing). Checked at 1440, 1280 and 390.
+
+**#57, Evan**
+> Make the "about" and "contact" sections of the tree lowercase, I want all the titles to be in the same style
+
+What changed:
+- about and contact now show lowercase on the tree, like evan, work/, realtruck/, artcenter/. Project names unchanged. Overlap check: 0 problems.

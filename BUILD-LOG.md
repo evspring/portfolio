@@ -487,3 +487,9 @@ What changed:
 - Pond labels are now chips like the card tags: pale mint pill with a soft shadow and the card's icon (sprout, kayak, flower). On hover or keyboard focus the chip lifts and turns deep green with paper text.
 - A slow double ripple spreads under the tree, kayak and flowers every 3.3s, out of step with each other. A feature's ripple stops once its card has been opened (remembered for the visit). Hovering holds a steady ring around the feature. Reduced motion: one still ring, no animation.
 - Checked at 1440 and 390: labels inside the painting, ripple stops after opening the tree card.
+
+**#60, Evan**
+> Lets add a small paragraph about me in place of the "I'm Evan, a UX/UI designer with a background in Cognitive Science", mention about my 2 years of experience at BioMarin and RealTruck, my experience contributing towards launched applications and my background in Cognitive Science and Interaction Design.
+
+What changed:
+- About intro is now a short paragraph: product designer, two years at BioMarin and RealTruck, contributed to launched applications, background in Cognitive Science and Interaction Design. "Click around the pond" moved down slightly to sit apart from it. Checked at 1440 and 390.

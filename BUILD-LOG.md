@@ -493,3 +493,14 @@ What changed:
 
 What changed:
 - About intro is now a short paragraph: product designer, two years at BioMarin and RealTruck, contributed to launched applications, background in Cognitive Science and Interaction Design. "Click around the pond" moved down slightly to sit apart from it. Checked at 1440 and 390.
+
+**#61, Evan**
+> I want the contact section to have a layout sort of like this with a tree and a person standing in the middle. The people don't need to move. Keep the current wording of the contact page and use a similar artstyle to the rest of the current site.
+
+(Reference attached: neel, "Made a new home for my work and my favorite tree in SF".)
+
+What changed:
+- Studied the reference: text top left, a grassy hill across the bottom of the page, a lone windswept cypress on the right with flat layered canopies, a small person standing on the hill toward the middle.
+- New `ContactScene` (painted in `contact-scene.ts`, compiled and inlined so it's there in the first frame): a soft watercolour hill in mint, sage and teal with grass blades and a few wildflowers, a windswept tree (leaning trunk painted like the home tree's stems, wide flat canopy layers shaded underneath and lit on top) with its shadow, and a still person on the hill (terracotta shirt, curly dark hair). Only the site's tokens.
+- Wording unchanged. On wide screens the scene rises up beside the text, so the tree sits next to the email like the reference; on phones it sits below. It fades into the paper above the footer, runs full width, never covers the email link, and doesn't scroll sideways at 390–1920.
+- Tuned on screenshots: canopies first read as flat dark discs (now clumps), grass too spiky, tree too small on desktop.

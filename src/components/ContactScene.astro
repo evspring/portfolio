@@ -1,0 +1,40 @@
+---
+/*
+  The landscape along the bottom of the contact page: a hill, a windswept tree and a person,
+  painted in watercolour. The painting code is in contact-scene.ts, compiled here and inlined
+  right after its canvas so it's painted before the first frame. It runs the full width of the
+  window and fades into the paper at its bottom edge, just above the footer.
+*/
+import { transformWithOxc } from 'vite';
+import source from './contact-scene.ts?raw';
+const { code } = await transformWithOxc(source, 'contact-scene.ts', { lang: 'ts' });
+const inline = `(function(){${code}})();`;
+---
+
+<div class="contact-scene" aria-hidden="true">
+  <canvas></canvas>
+  <script is:inline set:html={inline}></script>
+</div>
+
+<style>
+  .contact-scene {
+    position: relative;
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    height: clamp(280px, 56vh, 620px);
+    margin-bottom: -5rem; /* the footer sits on the fading grass */
+    pointer-events: none;
+  }
+  /* wide screens: the tree rises up beside the text rather than below it */
+  @media (min-width: 900px) {
+    .contact-scene { height: clamp(420px, 72vh, 760px); margin-top: clamp(-260px, -22vh, -120px); }
+  }
+  .contact-scene canvas {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    mix-blend-mode: multiply;
+    -webkit-mask-image: linear-gradient(to bottom, #000 78%, transparent);
+    mask-image: linear-gradient(to bottom, #000 78%, transparent);
+  }
+  :global(html:has(.contact-scene)) { overflow-x: clip; }
+  :global(html:not(.js)) .contact-scene { display: none; }
+</style>

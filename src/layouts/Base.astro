@@ -1,7 +1,7 @@
 ---
 import '../styles/global.css';
 
-import { EMAIL } from '../data/tree';
+import { EMAIL, LINKEDIN } from '../data/tree';
 import PaperSky from '../components/PaperSky.astro';
 
 interface Props {
@@ -68,12 +68,21 @@ const {
           <slot />
         </main>
 
-        <footer class="mx-auto mt-32 flex max-w-[68rem] justify-between border-t border-rule px-5 py-8 text-sm text-quiet sm:px-8">
-          <span>© {new Date().getFullYear()} Evan Springer</span>
-          <a href={`mailto:${EMAIL}`} class="no-underline hover:text-ink">{EMAIL}</a>
+        <footer class="mx-auto mt-32 flex max-w-[68rem] flex-wrap gap-x-6 gap-y-3 justify-between border-t border-rule px-5 py-8 text-sm text-quiet sm:px-8">
+          <span class="whitespace-nowrap">© {new Date().getFullYear()} Evan Springer</span>
+          <span class="flex items-center gap-4">
+            <a href={LINKEDIN} target="_blank" rel="noopener" class="footer-li no-underline hover:text-ink" aria-label="LinkedIn (opens in a new tab)">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="1.5" y="1.5" width="21" height="21" rx="4.5" fill="currentColor" /><circle cx="7.4" cy="7.3" r="1.55" fill="var(--color-paper)" /><path d="M5.9 10h3v8.4h-3zM10.8 10h2.9v1.3c.5-.9 1.6-1.6 3.1-1.6 2.6 0 3.3 1.7 3.3 4v4.7h-3v-4.2c0-1.1-.2-2-1.3-2s-1.6.9-1.6 2v4.2h-3z" fill="var(--color-paper)" /></svg>
+            </a>
+            <a href={`mailto:${EMAIL}`} class="no-underline hover:text-ink">{EMAIL}</a>
+          </span>
         </footer>
         <span id="doc-end" hidden></span>
       </div>
     )}
   </body>
 </html>
+
+<style is:global>
+  .footer-li svg { width: 1.15rem; height: 1.15rem; display: block; }
+</style>

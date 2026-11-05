@@ -11,6 +11,7 @@ export interface TreeNode {
 }
 
 export const EMAIL = 'evan.a.springer@gmail.com';
+export const LINKEDIN = 'https://www.linkedin.com/in/evanaspringer/';
 
 export const tree: TreeNode = {
   name: 'evan',

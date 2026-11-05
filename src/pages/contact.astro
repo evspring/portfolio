@@ -1,7 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import ContactScene from '../components/ContactScene.astro';
-import { EMAIL, treeLinkFor } from '../data/tree';
+import { EMAIL, LINKEDIN, treeLinkFor } from '../data/tree';
 ---
 
 <Base title="Contact — Evan Springer" back={treeLinkFor('/contact/')} plain>
@@ -12,8 +12,22 @@ import { EMAIL, treeLinkFor } from '../data/tree';
     </p>
     <a
       href={`mailto:${EMAIL}`}
-      class="mt-6 inline-block text-xl font-medium tracking-[-0.01em] underline decoration-rule decoration-1 underline-offset-[6px] hover:decoration-ink sm:text-2xl"
+      class="mt-6 inline-block text-[min(1.25rem,5.9vw)] font-medium tracking-[-0.01em] underline decoration-rule decoration-1 underline-offset-[6px] hover:decoration-ink sm:text-2xl"
     >{EMAIL}</a>
+    <p class="mt-8">
+      <a href={LINKEDIN} target="_blank" rel="noopener" class="linkedin" aria-label="LinkedIn (opens in a new tab)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="1.5" y="1.5" width="21" height="21" rx="4.5" /><circle cx="7.4" cy="7.3" r="1.55" class="cut" /><path d="M5.9 10h3v8.4h-3zM10.8 10h2.9v1.3c.5-.9 1.6-1.6 3.1-1.6 2.6 0 3.3 1.7 3.3 4v4.7h-3v-4.2c0-1.1-.2-2-1.3-2s-1.6.9-1.6 2v4.2h-3z" class="cut" /></svg>
+        <span>LinkedIn</span>
+      </a>
+    </p>
   </article>
   <ContactScene />
 </Base>
+
+<style>
+  .linkedin { display: inline-flex; align-items: center; gap: 0.6rem; color: var(--color-quiet); text-decoration: none; transition: color 0.15s ease; }
+  .linkedin svg { width: 1.75rem; height: 1.75rem; }
+  .linkedin rect { fill: currentColor; }
+  .linkedin .cut { fill: var(--color-paper); }
+  .linkedin:hover, .linkedin:focus-visible { color: var(--color-ink); }
+</style>

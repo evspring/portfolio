@@ -510,3 +510,12 @@ What changed:
 
 What changed:
 - Contact tree's leafy layers replaced with the home page tree's canopy blocks: rounded squares of wash graded light to deep (mint/sage into teal/deep), pigment pooling low, a darker drying edge and a little bleed, one block at the end of each limb. Same trunk and person. Checked at 1440 and 390.
+
+**#63, Evan**
+> lets add a linkedin icon that links out to my linkedin page here: https://www.linkedin.com/in/evanaspringer/
+
+What changed:
+- `LINKEDIN` added next to `EMAIL` in `src/data/tree.ts`.
+- Contact page: a LinkedIn icon with the word "LinkedIn" under the email, quiet grey turning ink on hover, opens in a new tab.
+- Footer on every content page: a small LinkedIn icon beside the email. The footer now wraps onto two lines on narrow phones instead of crowding.
+- Fixed while checking: the contact email ran ~16px past the edge on 320px phones; it now scales down slightly on very narrow screens. No sideways scroll at 320–1440 on contact, about or a case study.
